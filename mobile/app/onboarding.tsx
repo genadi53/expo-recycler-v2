@@ -60,11 +60,7 @@ export default function OnboardingScreen() {
 
   return (
     <View
-      style={[styles.root, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }]}
-      onLayout={(event) => {
-        const width = event.nativeEvent.layout.width;
-        if (width > 0 && width !== pageWidth) setPageWidth(width);
-      }}
+      style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 16) }]}
     >
       <View style={styles.top}>
         {last ? (
@@ -76,13 +72,20 @@ export default function OnboardingScreen() {
             onPress={finish}
             hitSlop={8}
             testID="onboarding-skip"
+            style={styles.skipHit}
           >
             <Text style={styles.skip}>Skip</Text>
           </Pressable>
         )}
       </View>
 
-      <View style={styles.pager}>
+      <View
+        style={styles.pager}
+        onLayout={(event) => {
+          const width = event.nativeEvent.layout.width;
+          if (width > 0 && width !== pageWidth) setPageWidth(width);
+        }}
+      >
         {pageWidth > 0 ? (
           <FlatList
             ref={listRef}
@@ -120,12 +123,18 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
+    overflow: "hidden",
   },
   top: {
     minHeight: 44,
     paddingHorizontal: 20,
-    alignItems: "flex-end",
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  skipHit: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   skip: {
     fontSize: 16,

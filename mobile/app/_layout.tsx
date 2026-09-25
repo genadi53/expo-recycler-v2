@@ -56,5 +56,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: Platform.OS === "web" ? 1 : 0,
     borderRightWidth: Platform.OS === "web" ? 1 : 0,
     borderColor: "#ddd4c6",
+    overflow: "hidden",
   },
 });
