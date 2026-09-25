@@ -35,7 +35,7 @@ export default function LeaderboardScreen() {
               </Text>
             </View>
           ) : (
-            <Text style={styles.note}>Pick a display name on the Log tab to see your rank.</Text>
+            <Text style={styles.note}>Set a display name in Settings to see your rank.</Text>
           )}
           {data.leaders.length === 0 ? (
             <EmptyState
