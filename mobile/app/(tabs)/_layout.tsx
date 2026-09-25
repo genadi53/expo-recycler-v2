@@ -27,7 +27,12 @@ function RecyclerTabBar({ state, navigation }: TabBarProps) {
             target: route.key,
             canPreventDefault: true,
           });
-          if (!focused && !event.defaultPrevented) {
+          if (event.defaultPrevented) return;
+          if (focused && route.name === "settings") {
+            navigation.navigate("settings", { screen: "index" });
+            return;
+          }
+          if (!focused) {
             navigation.navigate(route.name);
           }
         };

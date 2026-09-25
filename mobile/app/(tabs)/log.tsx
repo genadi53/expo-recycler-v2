@@ -22,11 +22,20 @@ export default function LogScreen() {
       <Screen title="Your log">
         <EmptyState
           title="Pick a display name"
-          body="The log, points, and badges stay with this name on this phone. There is no account. A new phone starts fresh."
+          body="The log, points, and badges stay with this name on this phone. Set it in Account under Settings. There is no sign-in, and a new phone starts fresh."
           icon="person-outline"
-          actionLabel="Choose a name"
-          onAction={() => router.push("/display-name" as Href)}
+          actionLabel="Open Account"
+          onAction={() => router.push("/settings/account" as Href)}
         />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Choose a display name"
+          onPress={() => router.push("/display-name" as Href)}
+          hitSlop={8}
+          testID="choose-name"
+        >
+          <Text style={styles.change}>Choose a name</Text>
+        </Pressable>
       </Screen>
     );
   }

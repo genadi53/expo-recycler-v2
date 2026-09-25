@@ -6,7 +6,15 @@ import type { ProfileSnapshot } from "@/lib/types";
 
 const STORAGE_KEY = "recycler.profile.v1";
 
-type StoredProfile = { id: string; displayName: string };
+type StoredProfile = { id: string; displayName: string; createdAt?: string };
+
+function withCreatedAt(id: string, displayName: string, previous?: StoredProfile | null): StoredProfile {
+  return {
+    id,
+    displayName,
+    createdAt: previous?.createdAt ?? new Date().toISOString(),
+  };
+}
 
 type ProfileContextValue = {
   ready: boolean;
@@ -33,7 +41,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return null;
     }
     const next = await api.profile(current.id);
-    const stored = { id: next.id, displayName: next.displayName };
+    const stored = withCreatedAt(next.id, next.displayName, current);
     profileRef.current = stored;
     setProfile(stored);
     setSnapshot(next);
@@ -48,8 +56,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (!raw || cancelled) return;
-        const stored = JSON.parse(raw) as StoredProfile;
-        if (!stored?.id || !stored.displayName) return;
+        const parsed = JSON.parse(raw) as StoredProfile;
+        if (!parsed?.id || !parsed.displayName) return;
+        const stored = withCreatedAt(parsed.id, parsed.displayName, parsed);
+        if (stored.createdAt !== parsed.createdAt) {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
         profileRef.current = stored;
         setProfile(stored);
         try {
@@ -73,7 +85,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (!trimmed) throw new Error("Display name is required.");
       const id = profile?.id ?? createId();
       const saved = await api.saveProfile(id, trimmed);
-      const stored = { id: saved.id, displayName: saved.displayName };
+      const stored = withCreatedAt(saved.id, saved.displayName, profileRef.current);
       profileRef.current = stored;
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
       setProfile(stored);
