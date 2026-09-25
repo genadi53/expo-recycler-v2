@@ -44,7 +44,7 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
   return (
     <View style={styles.fill}>
       {children}
-      {checking ? <View pointerEvents="auto" style={styles.cover} /> : null}
+      {checking ? <View style={styles.cover} /> : null}
     </View>
   );
 }
@@ -58,5 +58,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     backgroundColor: colors.bg,
+    pointerEvents: "auto",
   },
 });
