@@ -65,7 +65,7 @@ function RecyclerTabBar({ state, navigation }: TabBarProps) {
             style={styles.slot}
             testID={`tab-${route.name === "index" ? "dashboard" : route.name}`}
           >
-            <Ionicons name={focused ? item.iconOn : item.icon} size={22} color={color} />
+            <Ionicons name={focused ? item.iconOn : item.icon} size={26} color={color} />
             <Text style={[styles.label, { color }, focused && styles.labelOn]} numberOfLines={1}>
               {item.label}
             </Text>
