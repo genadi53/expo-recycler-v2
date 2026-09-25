@@ -4,7 +4,7 @@ import { Banner, Button, ErrorState, Field, Input, LoadingState, Screen } from "
 import { useEffect, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 
-export default function SettingsScreen() {
+export default function AccountScreen() {
   const { ready, profile, snapshot, error, refresh, saveName } = useProfile();
   const [name, setName] = useState("");
   const [seeded, setSeeded] = useState(false);
@@ -39,17 +39,17 @@ export default function SettingsScreen() {
 
   if (!ready) {
     return (
-      <Screen title="Settings">
-        <LoadingState label="Loading settings…" />
+      <Screen title="Account" back>
+        <LoadingState label="Loading account…" />
       </Screen>
     );
   }
 
   return (
-    <Screen title="Settings">
-      <Text style={styles.headline}>This phone</Text>
+    <Screen title="Account" back>
+      <Text style={styles.headline}>Display name</Text>
       <Text style={styles.body}>
-        There is no account. The display name lives on this phone, shows on the leaderboard, and starts over on a new phone.
+        There is no sign-in. The name lives on this phone, shows on the leaderboard, and starts over on a new phone.
       </Text>
       {error && profile && !snapshot ? <ErrorState message={error} onRetry={() => refresh().catch(() => {})} /> : null}
       {saved ? <Banner tone="good" title="Name saved" body="The leaderboard will use this display name." /> : null}

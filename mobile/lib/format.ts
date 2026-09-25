@@ -39,6 +39,14 @@ export function formatWhen(iso: string): string {
   });
 }
 
+export function formatMemberSince(iso?: string): string {
+  const date = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
+  }
+  return date.toLocaleString("en-US", { month: "long", year: "numeric" });
+}
+
 export function createId(): string {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;

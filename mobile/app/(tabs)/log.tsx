@@ -1,33 +1,13 @@
 import { useProfile } from "@/components/profile";
 import { colors, serif } from "@/components/theme";
-import { Button, EmptyState, ErrorState, Field, Input, LoadingState, Screen } from "@/components/ui";
+import { EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { formatWhen, METHOD_LABEL } from "@/lib/format";
 import type { Badge, LogEntry } from "@/lib/types";
 import { router, type Href } from "expo-router";
-import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function LogScreen() {
-  const { ready, profile, snapshot, error, refresh, saveName } = useProfile();
-  const [name, setName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
-
-  async function save() {
-    setFormError("");
-    if (!name.trim()) {
-      setFormError("Display name is required.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await saveName(name);
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save that name.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const { ready, profile, snapshot, error, refresh } = useProfile();
 
   if (!ready) {
     return (
@@ -42,13 +22,11 @@ export default function LogScreen() {
       <Screen title="Your log">
         <EmptyState
           title="Pick a display name"
-          body="The log, points, and badges stay with this name on this phone. There is no account. A new phone starts fresh."
+          body="The log, points, and badges stay with this name on this phone. Set it in Account under Settings. There is no sign-in, and a new phone starts fresh."
           icon="person-outline"
+          actionLabel="Open Account"
+          onAction={() => router.push("/settings/account" as Href)}
         />
-        <Field label="Display name" error={formError}>
-          <Input value={name} onChangeText={setName} placeholder="What should we call you?" maxLength={40} testID="log-display-name" />
-        </Field>
-        <Button label="Save name" onPress={save} loading={saving} testID="save-name" />
       </Screen>
     );
   }
@@ -71,7 +49,6 @@ export default function LogScreen() {
 
   return (
     <Screen title="Your log">
-      <Text style={styles.hello}>{snapshot.displayName}</Text>
       <Text style={styles.points}>{snapshot.points}</Text>
       <Text style={styles.pointsLabel}>points on this phone</Text>
       <Text style={styles.note}>Counts only. No carbon estimate, and no weight saved.</Text>
@@ -148,7 +125,6 @@ function LogRow({ entry }: { entry: LogEntry }) {
 }
 
 const styles = StyleSheet.create({
-  hello: { color: colors.muted, fontSize: 14, fontWeight: "700" },
   points: { fontFamily: serif, fontSize: 64, color: colors.ink, lineHeight: 68 },
   pointsLabel: { color: colors.muted, marginTop: -4 },
   note: { color: colors.muted, fontSize: 13, lineHeight: 18 },
