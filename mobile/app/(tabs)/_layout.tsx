@@ -53,7 +53,7 @@ function RecyclerTabBar({ state, navigation }: TabBarProps) {
 
         const item = TABS[route.name as keyof typeof TABS];
         if (!item) return null;
-        const color = focused ? colors.ink : "#8d8d8d";
+        const color = focused ? colors.green : "#8d8d8d";
 
         return (
           <Pressable
@@ -66,7 +66,7 @@ function RecyclerTabBar({ state, navigation }: TabBarProps) {
             testID={`tab-${route.name === "index" ? "dashboard" : route.name}`}
           >
             <Ionicons name={focused ? item.iconOn : item.icon} size={22} color={color} />
-            <Text style={[styles.label, { color }]} numberOfLines={1}>
+            <Text style={[styles.label, { color }, focused && styles.labelOn]} numberOfLines={1}>
               {item.label}
             </Text>
           </Pressable>
@@ -113,24 +113,27 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     letterSpacing: 0.1,
   },
+  labelOn: {
+    fontWeight: "700",
+  },
   circle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#111111",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.green,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 2,
+    marginBottom: 6,
   },
   plusBar: {
     position: "absolute",
-    width: 22,
-    height: 3,
+    width: 16,
+    height: 2.5,
     borderRadius: 2,
     backgroundColor: "#ffffff",
   },
   plusBarVertical: {
-    width: 3,
-    height: 22,
+    width: 2.5,
+    height: 16,
   },
 });
