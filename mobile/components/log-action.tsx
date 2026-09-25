@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Banner, Button, Field, Input } from "@/components/ui";
+import { Banner, Button } from "@/components/ui";
 import { useProfile } from "@/components/profile";
 import { colors, serif } from "@/components/theme";
 import { api } from "@/lib/api";
 import { KIND_LABEL } from "@/lib/format";
 import type { Idea, LogMethod, UnlockedBadge } from "@/lib/types";
+import { router, type Href } from "expo-router";
 
 export function LogAction({
   itemId,
@@ -16,11 +17,10 @@ export function LogAction({
   ideas: Idea[];
   logMethods: LogMethod[];
 }) {
-  const { profile, saveName, refresh } = useProfile();
+  const { profile, refresh } = useProfile();
   const [mode, setMode] = useState<"reuse" | "dispose" | null>(null);
   const [ideaId, setIdeaId] = useState(ideas[0]?.id ?? "");
   const [method, setMethod] = useState(logMethods.find((entry) => entry.recommended)?.method ?? logMethods[0]?.method ?? "");
-  const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<{ points: number; badges: UnlockedBadge[] } | null>(null);
@@ -29,22 +29,20 @@ export function LogAction({
     setError("");
     setSuccess(null);
     setMode(next);
-    setName(profile?.displayName ?? "");
   }
 
   async function confirm() {
     setError("");
+    if (!profile) {
+      setError("Pick a display name first.");
+      return;
+    }
     setSaving(true);
     try {
-      let profileId = profile?.id;
-      if (!profileId) {
-        const saved = await saveName(name);
-        profileId = saved.id;
-      }
       const result =
         mode === "reuse"
-          ? await api.log({ profileId, itemId, action: "reuse", ideaId })
-          : await api.log({ profileId, itemId, action: "dispose", method });
+          ? await api.log({ profileId: profile.id, itemId, action: "reuse", ideaId })
+          : await api.log({ profileId: profile.id, itemId, action: "dispose", method });
       await refresh();
       setSuccess({ points: result.pointsAwarded, badges: result.badgesUnlocked });
       setMode(null);
@@ -112,16 +110,11 @@ export function LogAction({
                 />
               ))}
           {!profile ? (
-            <Field label="Display name" error={name.trim() ? undefined : undefined}>
-              <Input
-                value={name}
-                onChangeText={setName}
-                placeholder="What should we call you?"
-                maxLength={40}
-                testID="log-name"
-              />
-              <Text style={styles.hint}>Saved on this phone only. A new phone starts a new profile.</Text>
-            </Field>
+            <Button
+              label="Pick a display name first"
+              onPress={() => router.push("/display-name" as Href)}
+              testID="log-pick-name"
+            />
           ) : null}
           {mode === "dispose" && method === "trash" ? (
             <Text style={styles.hint}>
@@ -133,7 +126,7 @@ export function LogAction({
               label={mode === "reuse" ? "Log reuse · 10 pts" : `Log disposal · ${logMethods.find((entry) => entry.method === method)?.points ?? 0} pts`}
               onPress={confirm}
               loading={saving}
-              disabled={(mode === "reuse" ? !ideaId : !method) || (!profile && !name.trim())}
+              disabled={(mode === "reuse" ? !ideaId : !method) || !profile}
               testID="confirm-log"
             />
             <Button label="Cancel" tone="quiet" onPress={() => setMode(null)} disabled={saving} />

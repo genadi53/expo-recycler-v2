@@ -13,10 +13,8 @@ const KINDS = ["cook", "beauty", "art", "useful"] as const;
 
 export default function SubmitScreen() {
   const params = useLocalSearchParams<{ item?: string; category?: string }>();
-  const { ready, profile, saveName, refresh } = useProfile();
+  const { profile, refresh } = useProfile();
   const { status, data, error, retry } = useQuery("submit-categories", () => api.categories());
-  const [name, setName] = useState("");
-  const [nameTouched, setNameTouched] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [itemName, setItemName] = useState("");
   const [kind, setKind] = useState<(typeof KINDS)[number]>("cook");
@@ -29,10 +27,6 @@ export default function SubmitScreen() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<SubmissionResult | null>(null);
   const [matchLabel, setMatchLabel] = useState("");
-
-  useEffect(() => {
-    if (ready && profile && !nameTouched) setName(profile.displayName);
-  }, [ready, profile, nameTouched]);
 
   useEffect(() => {
     const item = typeof params.item === "string" ? params.item : "";
@@ -75,7 +69,6 @@ export default function SubmitScreen() {
 
   async function publish() {
     const nextErrors: Record<string, string> = {};
-    if (!name.trim()) nextErrors.name = "Display name is required.";
     if (!categoryId) nextErrors.category = "Pick a category.";
     if (!itemName.trim()) nextErrors.item = "Item name is required.";
     if (!title.trim()) nextErrors.title = "Title is required.";
@@ -87,9 +80,9 @@ export default function SubmitScreen() {
 
     setSaving(true);
     try {
-      const saved = await saveName(name);
+      if (!profile) throw new Error("Pick a display name first.");
       const result = await api.submit({
-        profileId: saved.id,
+        profileId: profile.id,
         category: categoryId,
         itemName: itemName.trim(),
         ideaKind: kind,
@@ -145,6 +138,20 @@ export default function SubmitScreen() {
     );
   }
 
+  if (!profile) {
+    return (
+      <Screen title="Submit">
+        <EmptyState
+          title="Pick a display name"
+          body="Ideas you share are credited to the name stored on this phone."
+          icon="person-outline"
+          actionLabel="Choose a name"
+          onAction={() => router.push("/display-name" as Href)}
+        />
+      </Screen>
+    );
+  }
+
   if (success) {
     return (
       <Screen title="Submit">
@@ -169,22 +176,10 @@ export default function SubmitScreen() {
     <Screen title="Submit">
       <Text style={styles.headline}>Add an item or an idea</Text>
       <Text style={styles.body}>
-        It publishes immediately. If that item name already exists, your idea is attached to it. Otherwise a new item is created.
+        It publishes immediately as {profile.displayName}. If that item name already exists, your idea is attached to it.
+        Otherwise a new item is created.
       </Text>
       {formError ? <Banner tone="bad" title="Could not publish" body={formError} /> : null}
-
-      <Field label="Display name" error={fieldErrors.name}>
-        <Input
-          value={name}
-          onChangeText={(value) => {
-            setNameTouched(true);
-            setName(value);
-          }}
-          placeholder="What should we call you?"
-          maxLength={40}
-          testID="submit-name"
-        />
-      </Field>
 
       <Field label="Category" error={fieldErrors.category}>
         <View style={styles.chips}>

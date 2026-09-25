@@ -14,8 +14,8 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <OnboardingGate>
-        <ProfileProvider>
+      <ProfileProvider>
+        <OnboardingGate>
           <StatusBar style="dark" />
           <View style={styles.stage}>
             <View style={styles.phone}>
@@ -30,14 +30,18 @@ export default function RootLayout() {
                   name="onboarding"
                   options={{ gestureEnabled: false, animation: "fade" }}
                 />
+                <Stack.Screen
+                  name="display-name"
+                  options={{ gestureEnabled: false, animation: "fade" }}
+                />
                 <Stack.Screen name="results" />
                 <Stack.Screen name="category/[id]" />
                 <Stack.Screen name="item/[id]" />
               </Stack>
             </View>
           </View>
-        </ProfileProvider>
-      </OnboardingGate>
+        </OnboardingGate>
+      </ProfileProvider>
     </SafeAreaProvider>
   );
 }

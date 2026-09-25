@@ -14,34 +14,38 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { OnboardingSlide } from "@/components/onboarding-slide";
 import { ProgressDots } from "@/components/progress-dots";
+import { useProfile } from "@/components/profile";
 import { colors } from "@/components/theme";
 import { Button } from "@/components/ui";
 import { ONBOARDING_SEEN_KEY, ONBOARDING_SLIDES, type OnboardingSlide as Slide } from "@/constants/onboarding";
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
+  const { profile } = useProfile();
   const listRef = useRef<FlatList<Slide>>(null);
   const [pageWidth, setPageWidth] = useState(0);
   const [index, setIndex] = useState(0);
   const last = index === ONBOARDING_SLIDES.length - 1;
 
+  const afterOnboarding = useCallback(() => {
+    router.replace(profile ? "/" : "/display-name");
+  }, [profile]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const seen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
-      if (!cancelled && seen === "1") {
-        router.replace("/");
-      }
+      if (!cancelled && seen === "1") afterOnboarding();
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [afterOnboarding]);
 
   const finish = useCallback(async () => {
     await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, "1");
-    router.replace("/");
-  }, []);
+    afterOnboarding();
+  }, [afterOnboarding]);
 
   const goTo = useCallback(
     (next: number) => {

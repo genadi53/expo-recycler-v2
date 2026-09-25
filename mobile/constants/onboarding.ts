@@ -25,7 +25,7 @@ export const ONBOARDING_SLIDES: OnboardingSlide[] = [
   {
     id: "log-actions",
     title: "Log it on this phone",
-    body: "Record each reuse or disposal. No account and no password—just a display name when you want points.",
+    body: "Record each reuse or disposal. No account and no password. You’ll pick a display name next, and Recycler will keep it on this phone.",
     image: require("../assets/images/onboarding/log-actions.png"),
   },
   {

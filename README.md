@@ -26,7 +26,7 @@ npm install
 npm run web
 ```
 
-Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The first launch shows a four-screen tour; after that the app opens on Home. The app calls the API at `http://127.0.0.1:47821`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
+Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The first launch shows a four-screen tour, then asks for a display name once. After that the app opens on Home. The app calls the API at `http://127.0.0.1:47821`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
 
 On a wide browser window the app stays in a centered column so it still reads as a phone. The same Expo project can run on iOS and Android with `npm start` inside `mobile/`.
 
@@ -36,7 +36,7 @@ On a wide browser window the app stays in a centered column so it still reads as
 - Search, or browse Food, Plastic, Metal, Glass, Paper, and Other.
 - On an item, read reuse ideas and a short “rather just get rid of it” path.
 - Log “I reused this” or “I disposed of this.” Each record is its own event.
-- Open a personal log of points, badges, and recent actions. The first time, pick a display name.
+- Open a personal log of points, badges, and recent actions. Change the display name there if you want.
 - Open the leaderboard. It is friendly competition, not a verified ranking.
 - Submit an item or an idea. A matching name gets the idea; a new name becomes an item.
 
