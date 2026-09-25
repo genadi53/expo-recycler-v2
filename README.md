@@ -26,12 +26,13 @@ npm install
 npm run web
 ```
 
-Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The app calls the API at `http://127.0.0.1:47821`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
+Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The first launch shows a four-screen tour; after that the app opens on Home. The app calls the API at `http://127.0.0.1:47821`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
 
 On a wide browser window the app stays in a centered column so it still reads as a phone. The same Expo project can run on iOS and Android with `npm start` inside `mobile/`.
 
 ## What you can do
 
+- First-time onboarding: look up an item, reuse or dispose, log it on this phone, then keep the habit.
 - Search, or browse Food, Plastic, Metal, Glass, Paper, and Other.
 - On an item, read reuse ideas and a short “rather just get rid of it” path.
 - Log “I reused this” or “I disposed of this.” Each record is its own event.
