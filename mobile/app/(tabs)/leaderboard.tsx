@@ -1,15 +1,19 @@
 import { useProfile } from "@/components/profile";
 import { colors, serif } from "@/components/theme";
-import { Banner, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
+import { Banner, Chip, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
+import { DEFAULT_DIVISION, DIVISIONS, type DivisionId } from "@/constants/divisions";
 import { api } from "@/lib/api";
 import { ordinal } from "@/lib/format";
 import type { Leader } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { router, type Href } from "expo-router";
+import { useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function LeaderboardScreen() {
   const { ready, profile } = useProfile();
+  const [division, setDivision] = useState<DivisionId>(DEFAULT_DIVISION);
+  const selected = useMemo(() => DIVISIONS.find((item) => item.id === division) ?? DIVISIONS[0], [division]);
   const key = ready ? `board:${profile?.id ?? "anon"}` : "board:wait";
   const { status, data, error, retry } = useQuery(key, () =>
     ready ? api.leaderboard(profile?.id) : Promise.resolve(null),
@@ -22,13 +26,32 @@ export default function LeaderboardScreen() {
         title="Friendly competition, not a verified ranking."
         body="Display names are not tied to an account, so a name can be copied and points can be inflated."
       />
+
+      <View style={styles.divisions} testID="leaderboard-divisions">
+        <Text style={styles.section}>Division</Text>
+        <View style={styles.chips}>
+          {DIVISIONS.map((item) => (
+            <Chip
+              key={item.id}
+              label={item.label}
+              selected={item.id === division}
+              onPress={() => setDivision(item.id)}
+              testID={`division-${item.id}`}
+            />
+          ))}
+        </View>
+        <Text style={styles.note}>
+          {selected.label} is a placeholder. Rankings stay by points, the same in every division for now.
+        </Text>
+      </View>
+
       {!ready || status === "loading" ? <LoadingState label="Loading the leaderboard…" /> : null}
       {ready && status === "error" ? <ErrorState message={error} onRetry={retry} /> : null}
       {ready && status === "ready" && data ? (
         <>
           {data.you ? (
             <View style={styles.you} testID="your-rank">
-              <Text style={styles.youLabel}>Your rank</Text>
+              <Text style={styles.youLabel}>Your rank · {selected.label}</Text>
               <Text style={styles.youRank}>{ordinal(data.you.rank)}</Text>
               <Text style={styles.youMeta}>
                 {data.you.displayName} · {data.you.points} points
@@ -68,6 +91,15 @@ function LeaderRow({ leader }: { leader: Leader }) {
 }
 
 const styles = StyleSheet.create({
+  divisions: { gap: 10 },
+  section: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: colors.muted,
+  },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   you: {
     backgroundColor: colors.greenSoft,
     borderRadius: 16,

@@ -39,7 +39,7 @@ On a wide browser window the app stays in a centered column so it still reads as
 - Log “I reused this” or “I disposed of this.” Each record is its own event.
 - Open a personal log of points, badges, and recent actions. Change the display name there if you want.
 - Settings is a grouped list. Account is where you set or change the display name. The other rows open placeholder screens that say they are under construction.
-- Open the leaderboard. It is friendly competition, not a verified ranking.
+- Open the leaderboard. Neighborhood, City, and World are placeholder divisions; rankings stay by points. It is friendly competition, not a verified ranking.
 - Submit an item or an idea. A matching name gets the idea; a new name becomes an item.
 
 Points: reuse 10, responsible disposal 5, trash 2, idea on an existing item 15, new item 25.
