@@ -129,12 +129,12 @@ export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: (
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 20,
     justifyContent: "flex-end",
   },
   dim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(28, 25, 21, 0.45)",
   },
   sheet: {
