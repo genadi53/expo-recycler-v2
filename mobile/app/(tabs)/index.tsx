@@ -1,4 +1,3 @@
-import { useProfile } from "@/components/profile";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { Button, ErrorState, Input, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -9,7 +8,6 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {
-  const { ready, profile, snapshot } = useProfile();
   const { status, data, error, retry } = useQuery("categories", () => api.categories());
   const [query, setQuery] = useState("");
   const [hint, setHint] = useState("");
@@ -48,13 +46,6 @@ export default function HomeScreen() {
         {hint ? <Text style={styles.hint}>{hint}</Text> : null}
         <Button label="Search the catalog" onPress={search} testID="search-submit" />
       </View>
-
-      {ready && profile ? (
-        <Pressable accessibilityRole="button" onPress={() => router.push("/log" as Href)} style={styles.points} testID="points-chip">
-          <Text style={styles.pointsValue}>{snapshot ? `${snapshot.points} pts` : "…"}</Text>
-          <Text style={styles.pointsName}>{profile.displayName}</Text>
-        </Pressable>
-      ) : null}
 
       <Text style={styles.section}>Or start with a material</Text>
       {status === "loading" ? <LoadingState label="Looking through the catalog…" /> : null}
@@ -103,18 +94,6 @@ const styles = StyleSheet.create({
   note: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   searchBlock: { gap: 10 },
   hint: { color: colors.terra, fontSize: 13 },
-  points: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: colors.terraSoft,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  pointsValue: { color: colors.terra, fontWeight: "800" },
-  pointsName: { color: colors.ink, fontWeight: "600" },
   section: { fontFamily: serif, fontSize: 24, color: colors.ink, marginTop: 4 },
   grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -6 },
   cardSlot: { width: "50%", padding: 6 },
