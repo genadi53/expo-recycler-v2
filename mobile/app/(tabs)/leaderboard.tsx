@@ -36,6 +36,7 @@ export default function LeaderboardScreen() {
             </View>
           ) : (
             <Text style={styles.note}>Your rank uses the display name stored on this phone.</Text>
+            <Text style={styles.note}>Set a display name in Settings to see your rank.</Text>
           )}
           {data.leaders.length === 0 ? (
             <EmptyState

@@ -33,6 +33,7 @@ On a wide browser window the app stays in a centered column so it still reads as
 ## What you can do
 
 - First-time onboarding: look up an item, reuse or dispose, log it on this phone, then keep the habit.
+- Tabs: Dashboard, Log, Submit (the round button), Leaderboard, and Settings.
 - Search, or browse Food, Plastic, Metal, Glass, Paper, and Other.
 - On an item, read reuse ideas and a short “rather just get rid of it” path.
 - Log “I reused this” or “I disposed of this.” Each record is its own event.
