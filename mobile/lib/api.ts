@@ -94,5 +94,6 @@ export const api = {
     steps: string;
     disposalNote?: string;
     image?: IdeaImagePayload;
+    itemImage?: IdeaImagePayload;
   }) => request<SubmissionResult>("/submissions", { method: "POST", body: JSON.stringify(body) }),
 };

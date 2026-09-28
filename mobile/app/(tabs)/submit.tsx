@@ -12,6 +12,7 @@ import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native
 
 const KINDS = ["cook", "beauty", "art", "useful"] as const;
 type IdeaKind = (typeof KINDS)[number];
+type SubmitMode = "idea" | "item" | "combined";
 
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
@@ -25,6 +26,11 @@ function parseKind(value: string | undefined): IdeaKind | null {
   return (KINDS as readonly string[]).includes(value) ? (value as IdeaKind) : null;
 }
 
+function parseMode(value: string | undefined): SubmitMode {
+  if (value === "idea" || value === "item") return value;
+  return "combined";
+}
+
 function mimeFromAsset(asset: ImagePicker.ImagePickerAsset): IdeaImagePayload["mime"] | null {
   const declared = asset.mimeType?.toLowerCase();
   if (declared === "image/jpeg" || declared === "image/png" || declared === "image/webp") return declared;
@@ -36,7 +42,8 @@ function mimeFromAsset(asset: ImagePicker.ImagePickerAsset): IdeaImagePayload["m
 }
 
 export default function SubmitScreen() {
-  const params = useLocalSearchParams<{ item?: string; category?: string; kind?: string }>();
+  const params = useLocalSearchParams<{ item?: string; category?: string; kind?: string; mode?: string }>();
+  const mode = parseMode(typeof params.mode === "string" ? params.mode : undefined);
   const { profile, refresh } = useProfile();
   const { status, data, error, retry } = useQuery("submit-categories", () => api.categories());
   const [categoryId, setCategoryId] = useState("");
@@ -46,12 +53,17 @@ export default function SubmitScreen() {
   const [materials, setMaterials] = useState("");
   const [steps, setSteps] = useState("");
   const [disposalNote, setDisposalNote] = useState("");
-  const [picture, setPicture] = useState<PickedPicture | null>(null);
+  const [ideaPicture, setIdeaPicture] = useState<PickedPicture | null>(null);
+  const [itemPicture, setItemPicture] = useState<PickedPicture | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<SubmissionResult | null>(null);
   const [matchLabel, setMatchLabel] = useState("");
+
+  const showIdeaPicture = mode === "idea" || mode === "combined";
+  const showItemPicture = mode === "item" || mode === "combined";
+  const screenTitle = mode === "item" ? "Add item" : mode === "idea" ? "Add idea" : "Submit";
 
   useEffect(() => {
     const item = typeof params.item === "string" ? params.item : "";
@@ -81,6 +93,14 @@ export default function SubmitScreen() {
         .then((result) => {
           if (cancelled) return;
           const found = result.items.find((item) => item.name.toLowerCase() === trimmed.toLowerCase());
+          if (mode === "item") {
+            setMatchLabel(
+              found
+                ? `“${found.name}” already exists. Publishing will add an idea to it (15 points) and keep its current photo.`
+                : "This creates a new item. 25 points.",
+            );
+            return;
+          }
           setMatchLabel(
             found
               ? `This adds an idea to ${found.name}. 15 points.`
@@ -95,9 +115,9 @@ export default function SubmitScreen() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [itemName]);
+  }, [itemName, mode]);
 
-  async function pickPicture() {
+  async function pickPicture(target: "idea" | "item") {
     setFormError("");
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -118,10 +138,12 @@ export default function SubmitScreen() {
       setFormError("That picture could not be read. Try a JPEG, PNG, or WebP under 1.5 MB.");
       return;
     }
-    setPicture({
+    const picked = {
       uri: asset.uri,
       payload: { mime, data: asset.base64 },
-    });
+    };
+    if (target === "item") setItemPicture(picked);
+    else setIdeaPicture(picked);
   }
 
   async function publish() {
@@ -147,7 +169,8 @@ export default function SubmitScreen() {
         materials: materials.trim(),
         steps: steps.trim(),
         disposalNote: disposalNote.trim() || undefined,
-        image: picture?.payload,
+        image: showIdeaPicture ? ideaPicture?.payload : undefined,
+        itemImage: showItemPicture ? itemPicture?.payload : undefined,
       });
       await refresh();
       setSuccess(result);
@@ -165,7 +188,8 @@ export default function SubmitScreen() {
     setSteps("");
     setItemName("");
     setDisposalNote("");
-    setPicture(null);
+    setIdeaPicture(null);
+    setItemPicture(null);
     setMatchLabel("");
     setFieldErrors({});
     setFormError("");
@@ -173,21 +197,21 @@ export default function SubmitScreen() {
 
   if (status === "loading") {
     return (
-      <Screen title="Submit">
+      <Screen title={screenTitle}>
         <LoadingState label="Loading categories…" />
       </Screen>
     );
   }
   if (status === "error") {
     return (
-      <Screen title="Submit">
+      <Screen title={screenTitle}>
         <ErrorState message={error} onRetry={retry} />
       </Screen>
     );
   }
   if (!data || data.categories.length === 0) {
     return (
-      <Screen title="Submit">
+      <Screen title={screenTitle}>
         <EmptyState
           title="Nowhere to file this"
           body="The catalog has no categories yet, so a new item has no shelf."
@@ -199,7 +223,7 @@ export default function SubmitScreen() {
 
   if (!profile) {
     return (
-      <Screen title="Submit">
+      <Screen title={screenTitle}>
         <EmptyState
           title="Pick a display name"
           body="Ideas you share are credited to the name stored on this phone."
@@ -213,7 +237,7 @@ export default function SubmitScreen() {
 
   if (success) {
     return (
-      <Screen title="Submit">
+      <Screen title={screenTitle}>
         <Text style={styles.headline}>It’s in the catalog</Text>
         <Text style={styles.body}>
           {success.item.name} now includes “{success.idea.title}”. You earned {success.pointsAwarded} points.
@@ -231,13 +255,19 @@ export default function SubmitScreen() {
     );
   }
 
+  const headline =
+    mode === "item" ? "Add a new item" : mode === "idea" ? "Add a new idea" : "Add an item or an idea";
+  const body =
+    mode === "item"
+      ? `It publishes immediately as ${profile.displayName}. Include a photo of the material. You still share one reuse idea with it.`
+      : mode === "idea"
+        ? `It publishes immediately as ${profile.displayName}. If that item name already exists, your idea is attached to it. Otherwise a new item is created.`
+        : `It publishes immediately as ${profile.displayName}. If that item name already exists, your idea is attached to it. Otherwise a new item is created.`;
+
   return (
-    <Screen title="Submit">
-      <Text style={styles.headline}>Add an item or an idea</Text>
-      <Text style={styles.body}>
-        It publishes immediately as {profile.displayName}. If that item name already exists, your idea is attached to it.
-        Otherwise a new item is created.
-      </Text>
+    <Screen title={screenTitle}>
+      <Text style={styles.headline}>{headline}</Text>
+      <Text style={styles.body}>{body}</Text>
       {formError ? <Banner tone="bad" title="Could not publish" body={formError} /> : null}
 
       <Field label="Category" error={fieldErrors.category}>
@@ -257,12 +287,25 @@ export default function SubmitScreen() {
         <Input
           value={itemName}
           onChangeText={setItemName}
-          placeholder="Existing name, or a new one"
+          placeholder={mode === "item" ? "Name for this material" : "Existing name, or a new one"}
           maxLength={80}
           testID="submit-item"
         />
         {matchLabel ? <Text style={styles.hint}>{matchLabel}</Text> : null}
       </Field>
+
+      {showItemPicture ? (
+        <PictureField
+          label="Item picture"
+          picture={itemPicture}
+          onPick={() => pickPicture("item")}
+          onRemove={() => setItemPicture(null)}
+          addTestID="add-item-picture"
+          changeTestID="change-item-picture"
+          removeTestID="remove-item-picture"
+          accessibilityName="item"
+        />
+      ) : null}
 
       <Field label="Idea kind">
         <View style={styles.chips}>
@@ -294,44 +337,18 @@ export default function SubmitScreen() {
           testID="submit-steps"
         />
       </Field>
-      <Field label="Picture">
-        {picture ? (
-          <View style={styles.pictureBox}>
-            <Image source={{ uri: picture.uri }} style={styles.picture} accessibilityLabel="Selected idea picture" />
-            <View style={styles.pictureActions}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Change picture"
-                onPress={pickPicture}
-                style={({ pressed }) => [styles.pictureButton, pressed && styles.pressed, pointer]}
-                testID="change-picture"
-              >
-                <Text style={styles.pictureButtonLabel}>Change</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Remove picture"
-                onPress={() => setPicture(null)}
-                style={({ pressed }) => [styles.pictureButton, pressed && styles.pressed, pointer]}
-                testID="remove-picture"
-              >
-                <Text style={styles.pictureButtonLabel}>Remove</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add a picture"
-            onPress={pickPicture}
-            style={({ pressed }) => [styles.addPicture, pressed && styles.pressed, pointer]}
-            testID="add-picture"
-          >
-            <Text style={styles.addPictureLabel}>Add a picture</Text>
-            <Text style={styles.hint}>Optional. JPEG, PNG, or WebP under 1.5 MB.</Text>
-          </Pressable>
-        )}
-      </Field>
+      {showIdeaPicture ? (
+        <PictureField
+          label="Idea picture"
+          picture={ideaPicture}
+          onPick={() => pickPicture("idea")}
+          onRemove={() => setIdeaPicture(null)}
+          addTestID="add-picture"
+          changeTestID="change-picture"
+          removeTestID="remove-picture"
+          accessibilityName="idea"
+        />
+      ) : null}
       <Field label="Disposal note">
         <Input
           value={disposalNote}
@@ -343,6 +360,71 @@ export default function SubmitScreen() {
       </Field>
       <Button label="Publish" onPress={publish} loading={saving} testID="publish" />
     </Screen>
+  );
+}
+
+function PictureField({
+  label,
+  picture,
+  onPick,
+  onRemove,
+  addTestID,
+  changeTestID,
+  removeTestID,
+  accessibilityName,
+}: {
+  label: string;
+  picture: PickedPicture | null;
+  onPick: () => void;
+  onRemove: () => void;
+  addTestID: string;
+  changeTestID: string;
+  removeTestID: string;
+  accessibilityName: string;
+}) {
+  return (
+    <Field label={label}>
+      {picture ? (
+        <View style={styles.pictureBox}>
+          <Image
+            source={{ uri: picture.uri }}
+            style={styles.picture}
+            accessibilityLabel={`Selected ${accessibilityName} picture`}
+          />
+          <View style={styles.pictureActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Change ${accessibilityName} picture`}
+              onPress={onPick}
+              style={({ pressed }) => [styles.pictureButton, pressed && styles.pressed, pointer]}
+              testID={changeTestID}
+            >
+              <Text style={styles.pictureButtonLabel}>Change</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${accessibilityName} picture`}
+              onPress={onRemove}
+              style={({ pressed }) => [styles.pictureButton, pressed && styles.pressed, pointer]}
+              testID={removeTestID}
+            >
+              <Text style={styles.pictureButtonLabel}>Remove</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Add a ${accessibilityName} picture`}
+          onPress={onPick}
+          style={({ pressed }) => [styles.addPicture, pressed && styles.pressed, pointer]}
+          testID={addTestID}
+        >
+          <Text style={styles.addPictureLabel}>Add a picture</Text>
+          <Text style={styles.hint}>Optional. JPEG, PNG, or WebP under 1.5 MB.</Text>
+        </Pressable>
+      )}
+    </Field>
   );
 }
 

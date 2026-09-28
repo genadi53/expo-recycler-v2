@@ -16,9 +16,10 @@ async function json<T>(res: Response): Promise<T> {
   return body;
 }
 
-const imagesDir = ensureImagesDir(fs.mkdtempSync(path.join(os.tmpdir(), "recycler-images-")));
+const ideaImagesDir = ensureImagesDir(fs.mkdtempSync(path.join(os.tmpdir(), "recycler-idea-images-")));
+const itemImagesDir = ensureImagesDir(fs.mkdtempSync(path.join(os.tmpdir(), "recycler-item-images-")));
 const db = openDatabase(":memory:");
-const app = createApp(db, imagesDir);
+const app = createApp(db, ideaImagesDir, itemImagesDir);
 
 // 1x1 PNG
 const TINY_PNG_BASE64 =
@@ -218,7 +219,10 @@ assert(imageBytes.length > 0, "idea image body should not be empty");
 const traversal = await app.request("/idea-images/../package.json");
 assert(traversal.status === 404, "image route should reject path traversal");
 
-const fresh = await json<{ item: { id: string; created: boolean; name: string }; pointsAwarded: number }>(
+const fresh = await json<{
+  item: { id: string; created: boolean; name: string; imageUrl: string | null };
+  pointsAwarded: number;
+}>(
   await app.request("/submissions", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -231,18 +235,32 @@ const fresh = await json<{ item: { id: string; created: boolean; name: string };
       materials: "Wine corks\nGlue",
       steps: ["Slice corks into coins.", "Glue them into a square.", "Let the glue dry before you set a pot on it."],
       disposalNote: "Natural cork can be composted. Plastic corks are trash.",
+      itemImage: { mime: "image/png", data: TINY_PNG_BASE64 },
     }),
   }),
 );
 assert(fresh.item.created && fresh.pointsAwarded === 25, "new item should be 25 points");
-const cork = await json<{ disposal: { source: string; steps: string[] }; ideas: { title: string }[] }>(
-  await app.request(`/items/${fresh.item.id}`),
-);
+assert(fresh.item.imageUrl?.startsWith("/item-images/") && fresh.item.imageUrl.endsWith(".png"), "item imageUrl missing");
+const cork = await json<{
+  item: { imageUrl: string | null };
+  disposal: { source: string; steps: string[] };
+  ideas: { title: string }[];
+}>(await app.request(`/items/${fresh.item.id}`));
+assert(cork.item.imageUrl === fresh.item.imageUrl, "item detail should include item imageUrl");
 assert(cork.disposal.source === "item", "disposal note should become item guidance");
 assert(cork.ideas.some((idea) => idea.title === "Cork trivet"), "new idea should be searchable on the item");
-const foundCork = await json<{ items: { name: string }[] }>(await app.request("/items?q=cork"));
-assert(foundCork.items.some((item) => item.name === "Wine corks"), "new item should show up in search");
-
+const itemImageRes = await app.request(fresh.item.imageUrl!);
+assert(itemImageRes.status === 200, "item image should be served");
+assert(itemImageRes.headers.get("content-type") === "image/png", "item image content-type should be png");
+const itemImageBytes = Buffer.from(await itemImageRes.arrayBuffer());
+assert(itemImageBytes.length > 0, "item image body should not be empty");
+const itemTraversal = await app.request("/item-images/../package.json");
+assert(itemTraversal.status === 404, "item image route should reject path traversal");
+const foundCork = await json<{ items: { name: string; imageUrl: string | null }[] }>(await app.request("/items?q=cork"));
+assert(
+  foundCork.items.some((item) => item.name === "Wine corks" && item.imageUrl === fresh.item.imageUrl),
+  "new item should show up in search with imageUrl",
+);
 await json(
   await app.request("/submissions", {
     method: "POST",

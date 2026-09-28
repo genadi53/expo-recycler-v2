@@ -1,7 +1,9 @@
+import { CreateSheet } from "@/components/create-sheet";
 import { colors } from "@/components/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import type { ComponentProps } from "react";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -14,7 +16,12 @@ const TABS = {
   settings: { label: "Settings", icon: "settings-outline" as const, iconOn: "settings" as const },
 };
 
-function RecyclerTabBar({ state, navigation }: TabBarProps) {
+function RecyclerTabBar({
+  state,
+  navigation,
+  onOpenSheet,
+  sheetOpen,
+}: TabBarProps & { onOpenSheet: () => void; sheetOpen: boolean }) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -42,9 +49,9 @@ function RecyclerTabBar({ state, navigation }: TabBarProps) {
             <Pressable
               key={route.key}
               accessibilityRole="button"
-              accessibilityLabel="Submit"
-              accessibilityState={{ selected: focused }}
-              onPress={onPress}
+              accessibilityLabel="Shortcuts"
+              accessibilityState={{ selected: sheetOpen }}
+              onPress={onOpenSheet}
               style={styles.slot}
               testID="tab-submit"
             >
@@ -82,21 +89,29 @@ function RecyclerTabBar({ state, navigation }: TabBarProps) {
 }
 
 export default function TabLayout() {
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   return (
-    <Tabs
-      tabBar={(props) => <RecyclerTabBar {...props} />}
-      screenOptions={{ headerShown: false, tabBarShowLabel: false }}
-    >
-      <Tabs.Screen name="index" options={{ title: "Dashboard" }} />
-      <Tabs.Screen name="log" options={{ title: "Log" }} />
-      <Tabs.Screen name="submit" options={{ title: "Submit" }} />
-      <Tabs.Screen name="leaderboard" options={{ title: "Leaderboard" }} />
-      <Tabs.Screen name="settings" options={{ title: "Settings" }} />
-    </Tabs>
+    <View style={styles.frame}>
+      <Tabs
+        tabBar={(props) => (
+          <RecyclerTabBar {...props} onOpenSheet={() => setSheetOpen(true)} sheetOpen={sheetOpen} />
+        )}
+        screenOptions={{ headerShown: false, tabBarShowLabel: false }}
+      >
+        <Tabs.Screen name="index" options={{ title: "Dashboard" }} />
+        <Tabs.Screen name="log" options={{ title: "Log" }} />
+        <Tabs.Screen name="submit" options={{ title: "Submit" }} />
+        <Tabs.Screen name="leaderboard" options={{ title: "Leaderboard" }} />
+        <Tabs.Screen name="settings" options={{ title: "Settings" }} />
+      </Tabs>
+      <CreateSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  frame: { flex: 1 },
   bar: {
     flexDirection: "row",
     alignItems: "flex-end",

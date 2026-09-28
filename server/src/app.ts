@@ -55,6 +55,12 @@ const submissionSchema = z.object({
       data: z.string().min(1, "Picture data is required."),
     })
     .optional(),
+  itemImage: z
+    .object({
+      mime: z.enum(["image/jpeg", "image/png", "image/webp"], { error: "Picture must be a JPEG, PNG, or WebP." }),
+      data: z.string().min(1, "Picture data is required."),
+    })
+    .optional(),
 });
 
 const logSchema = z
@@ -104,6 +110,7 @@ type ItemRow = {
   aliases: string;
   category_id: string;
   summary: string;
+  image_filename: string | null;
   status: string;
   created_at: string;
 };
@@ -140,12 +147,37 @@ function ideaImageUrl(filename: string | null | undefined): string | null {
   return `/idea-images/${filename}`;
 }
 
+function itemImageUrl(filename: string | null | undefined): string | null {
+  if (!filename) return null;
+  return `/item-images/${filename}`;
+}
+
 function contentTypeForFilename(filename: string): string | null {
   const ext = path.extname(filename).toLowerCase();
   if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
   if (ext === ".png") return "image/png";
   if (ext === ".webp") return "image/webp";
   return null;
+}
+
+function serveImageFile(imagesDir: string, raw: string): Response {
+  const file = path.basename(raw);
+  if (!file || file !== raw || file.includes("..")) throw new HttpError(404, "Not found.");
+  const contentType = contentTypeForFilename(file);
+  if (!contentType) throw new HttpError(404, "Not found.");
+  const fullPath = path.join(imagesDir, file);
+  if (!fullPath.startsWith(path.resolve(imagesDir) + path.sep) && fullPath !== path.resolve(imagesDir)) {
+    throw new HttpError(404, "Not found.");
+  }
+  if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) throw new HttpError(404, "Not found.");
+  const body = fs.readFileSync(fullPath);
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
 }
 
 type DisposalRow = {
@@ -176,6 +208,7 @@ function publicItem(row: ItemRow, categoryName: string) {
     categoryId: row.category_id,
     categoryName,
     summary: row.summary,
+    imageUrl: itemImageUrl(row.image_filename),
     status: row.status,
   };
 }
@@ -288,7 +321,7 @@ function readDisplayName(body: unknown): string {
   return parsed.data;
 }
 
-export function createApp(db: DB, imagesDir: string) {
+export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) {
   const app = new Hono();
   app.use("*", cors());
   app.use("*", async (c, next) => {
@@ -305,26 +338,8 @@ export function createApp(db: DB, imagesDir: string) {
 
   app.notFound((c) => c.json({ error: "Not found." }, 404));
 
-  app.get("/idea-images/:file", (c) => {
-    const raw = c.req.param("file");
-    const file = path.basename(raw);
-    if (!file || file !== raw || file.includes("..")) throw new HttpError(404, "Not found.");
-    const contentType = contentTypeForFilename(file);
-    if (!contentType) throw new HttpError(404, "Not found.");
-    const fullPath = path.join(imagesDir, file);
-    if (!fullPath.startsWith(path.resolve(imagesDir) + path.sep) && fullPath !== path.resolve(imagesDir)) {
-      throw new HttpError(404, "Not found.");
-    }
-    if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) throw new HttpError(404, "Not found.");
-    const body = fs.readFileSync(fullPath);
-    return new Response(body, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=86400",
-      },
-    });
-  });
+  app.get("/idea-images/:file", (c) => serveImageFile(imagesDir, c.req.param("file")));
+  app.get("/item-images/:file", (c) => serveImageFile(itemImagesDir, c.req.param("file")));
 
   app.get("/categories", (c) => {
     const categories = db
@@ -344,7 +359,7 @@ export function createApp(db: DB, imagesDir: string) {
     const category = (c.req.query("category") ?? "").trim();
     const params: string[] = [];
     let sql = `
-      SELECT i.id, i.name, i.summary, i.category_id AS categoryId, c.name AS categoryName
+      SELECT i.id, i.name, i.summary, i.category_id AS categoryId, c.name AS categoryName, i.image_filename AS imageFilename
       FROM items i
       JOIN categories c ON c.id = i.category_id
       WHERE i.status = 'published'
@@ -359,7 +374,23 @@ export function createApp(db: DB, imagesDir: string) {
       params.push(category, category);
     }
     sql += " ORDER BY i.name COLLATE NOCASE";
-    const items = db.prepare(sql).all(...params);
+    const items = (
+      db.prepare(sql).all(...params) as {
+        id: string;
+        name: string;
+        summary: string;
+        categoryId: string;
+        categoryName: string;
+        imageFilename: string | null;
+      }[]
+    ).map((item) => ({
+      id: item.id,
+      name: item.name,
+      summary: item.summary,
+      categoryId: item.categoryId,
+      categoryName: item.categoryName,
+      imageUrl: itemImageUrl(item.imageFilename),
+    }));
     return c.json({ items });
   });
 
@@ -558,6 +589,7 @@ export function createApp(db: DB, imagesDir: string) {
     const steps = normalizeSteps(body.steps);
     const disposalNote = body.disposalNote?.trim() ?? "";
     const decodedImage = body.image ? decodeIdeaImage(body.image) : null;
+    const decodedItemImage = body.itemImage ? decodeIdeaImage(body.itemImage) : null;
 
     const result = withTransaction(db, () => {
       requireProfile(db, body.profileId);
@@ -570,16 +602,19 @@ export function createApp(db: DB, imagesDir: string) {
       let itemId: string;
       let createdItem = false;
       let points = EXISTING_ITEM_POINTS;
+      let itemImageFilename: string | null = null;
 
       if (existing) {
         itemId = existing.id;
+        itemImageFilename = existing.image_filename;
       } else {
         itemId = uniqueItemId(db, body.itemName);
         const summary = body.title.trim();
+        itemImageFilename = decodedItemImage ? `${itemId}.${decodedItemImage.ext}` : null;
         db.prepare(
-          `INSERT INTO items (id, name, aliases, category_id, summary, status, created_at)
-           VALUES (?, ?, '[]', ?, ?, 'published', ?)`,
-        ).run(itemId, body.itemName, category.id, summary, nowIso());
+          `INSERT INTO items (id, name, aliases, category_id, summary, image_filename, status, created_at)
+           VALUES (?, ?, '[]', ?, ?, ?, 'published', ?)`,
+        ).run(itemId, body.itemName, category.id, summary, itemImageFilename, nowIso());
         createdItem = true;
         points = NEW_ITEM_POINTS;
         if (disposalNote) {
@@ -598,6 +633,9 @@ export function createApp(db: DB, imagesDir: string) {
             title,
             JSON.stringify([disposalNote, "Check the rules where you live before you rely on this."]),
           );
+        }
+        if (decodedItemImage && itemImageFilename) {
+          fs.writeFileSync(path.join(itemImagesDir, itemImageFilename), decodedItemImage.buffer);
         }
       }
 
@@ -624,9 +662,10 @@ export function createApp(db: DB, imagesDir: string) {
 
       const total = addPoints(db, body.profileId, points);
       const badgesUnlocked = awardBadges(db, body.profileId);
-      const item = db.prepare("SELECT name, category_id FROM items WHERE id = ?").get(itemId) as {
+      const item = db.prepare("SELECT name, category_id, image_filename FROM items WHERE id = ?").get(itemId) as {
         name: string;
         category_id: string;
+        image_filename: string | null;
       };
       const itemCategory = db.prepare("SELECT name FROM categories WHERE id = ?").get(item.category_id) as {
         name: string;
@@ -638,6 +677,7 @@ export function createApp(db: DB, imagesDir: string) {
           categoryId: item.category_id,
           categoryName: itemCategory.name,
           created: createdItem,
+          imageUrl: itemImageUrl(item.image_filename),
         },
         idea: { id: ideaId, title: body.title, imageUrl: ideaImageUrl(imageFilename) },
         pointsAwarded: points,

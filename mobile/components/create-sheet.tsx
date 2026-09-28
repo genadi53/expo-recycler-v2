@@ -29,19 +29,17 @@ type ListShortcut = {
 };
 
 const CIRCLES: CircleShortcut[] = [
-  { label: "Recycle", icon: "leaf-outline", href: "/results", testID: "shortcut-recycle" },
-  { label: "Recipe", icon: "restaurant-outline", href: "/recipes", testID: "shortcut-recipe" },
+  { label: "Add item", icon: "add-outline", href: "/submit?mode=item", testID: "shortcut-add-item" },
+  { label: "Recipe", icon: "restaurant-outline", href: "/submit?mode=idea", testID: "shortcut-recipe" },
   { label: "Scan", icon: "barcode-outline", href: "/scan", testID: "shortcut-scan" },
   { label: "Search", icon: "search-outline", href: "/browse", testID: "shortcut-search" },
 ];
 
 const ROWS: ListShortcut[] = [
-  { label: "Add an idea", icon: "bulb-outline", href: "/submit", testID: "shortcut-add-idea" },
   { label: "Log reuse", icon: "refresh-outline", href: "/browse", testID: "shortcut-log-reuse" },
-  { label: "Beauty use", icon: "sparkles-outline", href: "/submit?kind=beauty", testID: "shortcut-beauty" },
+  { label: "Beauty use", icon: "sparkles-outline", href: "/submit?kind=beauty&mode=idea", testID: "shortcut-beauty" },
   { label: "Photos", icon: "camera-outline", href: "/photos", testID: "shortcut-photos" },
 ];
-
 export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
 

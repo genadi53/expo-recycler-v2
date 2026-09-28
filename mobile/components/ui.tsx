@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { categoryAccent, colors, serif } from "@/components/theme";
+import { absoluteApiUrl } from "@/lib/api";
 import type { ItemSummary } from "@/lib/types";
 
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
@@ -215,9 +217,14 @@ export function EmptyState({
 
 export function ItemRow({ item, onPress }: { item: ItemSummary; onPress: () => void }) {
   const accent = categoryAccent[item.categoryId] ?? colors.green;
+  const imageUri = absoluteApiUrl(item.imageUrl);
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.itemRow, pressed && styles.pressed, pointer]}>
-      <View style={[styles.accent, { backgroundColor: accent }]} />
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.itemThumb} accessibilityLabel={`${item.name} picture`} />
+      ) : (
+        <View style={[styles.accent, { backgroundColor: accent }]} />
+      )}
       <View style={styles.itemCopy}>
         <Text style={styles.itemName}>{item.name}</Text>
         <Text style={styles.itemSummary} numberOfLines={2}>
@@ -327,6 +334,12 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   accent: { width: 8, alignSelf: "stretch", borderRadius: 8 },
+  itemThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: colors.line,
+  },
   itemCopy: { flex: 1, gap: 2 },
   itemName: { fontSize: 17, fontWeight: "700", color: colors.ink },
   itemSummary: { color: colors.muted, fontSize: 14, lineHeight: 19 },
