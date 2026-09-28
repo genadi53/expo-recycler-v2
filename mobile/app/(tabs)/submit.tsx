@@ -690,7 +690,6 @@ function IdeaFields({
             <Chip key={entry} label={KIND_LABEL[entry]} selected={kind === entry} onPress={() => setKind(entry)} />
           ))}
         </View>
-        <Text style={styles.hint}>Food is often cook or beauty. Materials are often art or useful. Any kind is allowed.</Text>
       </Field>
 
       <Field label="Title" error={fieldErrors.title}>
