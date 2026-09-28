@@ -1,13 +1,15 @@
 import { colors, serif } from "@/components/theme";
+import { absoluteApiUrl } from "@/lib/api";
 import { KIND_LABEL } from "@/lib/format";
 import type { IdeaSummary } from "@/lib/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
 export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
+  const imageUri = absoluteApiUrl(recipe.imageUrl);
   return (
     <Pressable
       accessibilityRole="button"
@@ -16,6 +18,9 @@ export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
       style={({ pressed }) => [styles.tile, pressed && styles.pressed, pointer]}
       testID={`recipe-${recipe.id}`}
     >
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.thumb} accessibilityLabel={`${recipe.title} picture`} />
+      ) : null}
       <Text style={styles.kind}>{KIND_LABEL[recipe.kind]}</Text>
       <Text style={styles.title} numberOfLines={2}>
         {recipe.title}
@@ -70,6 +75,14 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 112,
     gap: 4,
+    overflow: "hidden",
+  },
+  thumb: {
+    width: "100%",
+    height: 72,
+    borderRadius: 10,
+    backgroundColor: colors.line,
+    marginBottom: 2,
   },
   kind: {
     color: colors.green,
