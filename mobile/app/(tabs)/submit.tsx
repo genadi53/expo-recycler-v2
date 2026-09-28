@@ -98,12 +98,13 @@ export default function SubmitScreen() {
   }
 
   if (success) {
+    const successBody = success.idea
+      ? `${success.item.name} now includes “${success.idea.title}”. You earned ${success.pointsAwarded} points.`
+      : `${success.item.name} is in the catalog. You earned ${success.pointsAwarded} points.`;
     return (
       <Screen title={screenTitle}>
         <Text style={styles.headline}>It’s in the catalog</Text>
-        <Text style={styles.body}>
-          {success.item.name} now includes “{success.idea.title}”. You earned {success.pointsAwarded} points.
-        </Text>
+        <Text style={styles.body}>{successBody}</Text>
         {success.badgesUnlocked.length ? (
           <Banner
             tone="good"
@@ -153,7 +154,6 @@ export default function SubmitScreen() {
           displayName={profile.displayName}
           initialItemName={initialItem}
           initialCategoryId={initialCategory}
-          initialKind={initialKind}
           onPublished={async (result) => {
             await refresh();
             setSuccess(result);
@@ -214,7 +214,6 @@ function AddItemForm({
   displayName,
   initialItemName,
   initialCategoryId,
-  initialKind,
   onPublished,
 }: {
   categories: Category[];
@@ -222,24 +221,19 @@ function AddItemForm({
   displayName: string;
   initialItemName: string;
   initialCategoryId: string;
-  initialKind: IdeaKind;
   onPublished: (result: SubmissionResult) => Promise<void>;
 }) {
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [itemName, setItemName] = useState(initialItemName);
-  const [kind, setKind] = useState<IdeaKind>(initialKind);
-  const [title, setTitle] = useState("");
-  const [materials, setMaterials] = useState("");
-  const [steps, setSteps] = useState("");
   const [disposalNote, setDisposalNote] = useState("");
-  const [ideaPicture, setIdeaPicture] = useState<PickedPicture | null>(null);
   const [itemPicture, setItemPicture] = useState<PickedPicture | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [matchHint, setMatchHint] = useState<{ name: string; text: string } | null>(null);
+  const [matchHint, setMatchHint] = useState<{ name: string; text: string; exists: boolean } | null>(null);
   const trimmedItemName = itemName.trim();
   const matchLabel = trimmedItemName && matchHint?.name === trimmedItemName ? matchHint.text : "";
+  const nameTaken = Boolean(trimmedItemName && matchHint?.name === trimmedItemName && matchHint.exists);
 
   useEffect(() => {
     if (!trimmedItemName) return;
@@ -250,12 +244,15 @@ function AddItemForm({
         .then((result) => {
           if (cancelled) return;
           const found = result.items.find((item) => item.name.toLowerCase() === trimmedItemName.toLowerCase());
-          setMatchHint({
-            name: trimmedItemName,
-            text: found
-              ? `“${found.name}” already exists. Publishing will add an idea to it (15 points) and keep its current photo.`
-              : "This creates a new item. 25 points.",
-          });
+          setMatchHint(
+            found
+              ? {
+                  name: trimmedItemName,
+                  exists: true,
+                  text: `“${found.name}” already exists. Open Add recipe to attach an idea to it.`,
+                }
+              : { name: trimmedItemName, exists: false, text: "This creates a new item. 25 points." },
+          );
         })
         .catch(() => {
           if (!cancelled) setMatchHint(null);
@@ -267,7 +264,7 @@ function AddItemForm({
     };
   }, [trimmedItemName]);
 
-  async function pickPicture(target: "idea" | "item") {
+  async function pickPicture() {
     setFormError("");
     const result = await pickPictureFromLibrary();
     if (result.error) {
@@ -275,17 +272,14 @@ function AddItemForm({
       return;
     }
     if (!result.picture) return;
-    if (target === "item") setItemPicture(result.picture);
-    else setIdeaPicture(result.picture);
+    setItemPicture(result.picture);
   }
 
   async function publish() {
     const nextErrors: Record<string, string> = {};
     if (!categoryId) nextErrors.category = "Pick a category.";
     if (!itemName.trim()) nextErrors.item = "Item name is required.";
-    if (!title.trim()) nextErrors.title = "Title is required.";
-    if (!materials.trim()) nextErrors.materials = "Materials are required.";
-    if (!steps.trim()) nextErrors.steps = "Steps are required.";
+    else if (nameTaken) nextErrors.item = "That item already exists. Add a recipe to it instead.";
     setFieldErrors(nextErrors);
     setFormError("");
     if (Object.keys(nextErrors).length > 0) return;
@@ -296,12 +290,7 @@ function AddItemForm({
         profileId,
         category: categoryId,
         itemName: itemName.trim(),
-        ideaKind: kind,
-        title: title.trim(),
-        materials: materials.trim(),
-        steps: steps.trim(),
         disposalNote: disposalNote.trim() || undefined,
-        image: ideaPicture?.payload,
         itemImage: itemPicture?.payload,
       });
       await onPublished(result);
@@ -316,8 +305,8 @@ function AddItemForm({
     <>
       <Text style={styles.headline}>Add a new item</Text>
       <Text style={styles.body}>
-        It publishes immediately as {displayName}. Include a photo of the material. You still share one reuse idea with
-        it.
+        It publishes immediately as {displayName}. Add a photo of the material if you have one. Recipes come later from
+        Add recipe.
       </Text>
       {formError ? <Banner tone="bad" title="Could not publish" body={formError} /> : null}
 
@@ -348,7 +337,7 @@ function AddItemForm({
       <PictureField
         label="Item picture"
         picture={itemPicture}
-        onPick={() => pickPicture("item")}
+        onPick={pickPicture}
         onRemove={() => setItemPicture(null)}
         addTestID="add-item-picture"
         changeTestID="change-item-picture"
@@ -356,31 +345,16 @@ function AddItemForm({
         accessibilityName="item"
       />
 
-      <IdeaFields
-        kind={kind}
-        setKind={setKind}
-        title={title}
-        setTitle={setTitle}
-        materials={materials}
-        setMaterials={setMaterials}
-        steps={steps}
-        setSteps={setSteps}
-        ideaPicture={ideaPicture}
-        onPickIdeaPicture={() => pickPicture("idea")}
-        onRemoveIdeaPicture={() => setIdeaPicture(null)}
-        fieldErrors={fieldErrors}
-      />
-
       <Field label="Disposal note">
         <Input
           value={disposalNote}
           onChangeText={setDisposalNote}
-          placeholder="Optional. Used only if this item is new."
+          placeholder="Optional. Short guidance for getting rid of it."
           multiline
           testID="submit-disposal"
         />
       </Field>
-      <Button label="Publish" onPress={publish} loading={saving} testID="publish" />
+      <Button label="Publish" onPress={publish} loading={saving} disabled={nameTaken} testID="publish" />
     </>
   );
 }

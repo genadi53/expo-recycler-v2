@@ -37,31 +37,46 @@ export class HttpError extends Error {
 
 const displayNameSchema = z.string().trim().min(1, "Display name is required.").max(40, "Display name is too long.");
 
-const submissionSchema = z.object({
-  profileId: z.string().trim().min(1, "Profile id is required.").max(80, "Profile id is too long."),
-  category: z.string().trim().min(1, "Category is required.").max(40),
-  itemName: z.string().trim().min(1, "Item name is required.").max(80, "Item name is too long."),
-  ideaKind: z.enum(IDEA_KINDS, { error: "Pick a kind: cook, beauty, art, or useful." }),
-  title: z.string().trim().min(1, "Title is required.").max(120, "Title is too long."),
-  materials: z.string().trim().min(1, "Materials are required.").max(2000, "Materials are too long."),
-  steps: z.union([
-    z.string().trim().min(1, "Steps are required."),
-    z.array(z.string()).min(1, "Steps are required."),
-  ]),
-  disposalNote: z.string().optional(),
-  image: z
-    .object({
-      mime: z.enum(["image/jpeg", "image/png", "image/webp"], { error: "Picture must be a JPEG, PNG, or WebP." }),
-      data: z.string().min(1, "Picture data is required."),
-    })
-    .optional(),
-  itemImage: z
-    .object({
-      mime: z.enum(["image/jpeg", "image/png", "image/webp"], { error: "Picture must be a JPEG, PNG, or WebP." }),
-      data: z.string().min(1, "Picture data is required."),
-    })
-    .optional(),
+const imagePayloadSchema = z.object({
+  mime: z.enum(["image/jpeg", "image/png", "image/webp"], { error: "Picture must be a JPEG, PNG, or WebP." }),
+  data: z.string().min(1, "Picture data is required."),
 });
+
+const submissionSchema = z
+  .object({
+    profileId: z.string().trim().min(1, "Profile id is required.").max(80, "Profile id is too long."),
+    category: z.string().trim().min(1, "Category is required.").max(40),
+    itemName: z.string().trim().min(1, "Item name is required.").max(80, "Item name is too long."),
+    ideaKind: z.enum(IDEA_KINDS, { error: "Pick a kind: cook, beauty, art, or useful." }).optional(),
+    title: z.string().trim().max(120, "Title is too long.").optional(),
+    materials: z.string().trim().max(2000, "Materials are too long.").optional(),
+    steps: z
+      .union([z.string(), z.array(z.string())])
+      .optional(),
+    disposalNote: z.string().optional(),
+    image: imagePayloadSchema.optional(),
+    itemImage: imagePayloadSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    const hasIdea =
+      value.ideaKind != null ||
+      (value.title != null && value.title.length > 0) ||
+      (value.materials != null && value.materials.length > 0) ||
+      value.steps != null;
+    if (!hasIdea) return;
+    if (!value.ideaKind) {
+      ctx.addIssue({ code: "custom", message: "Pick a kind: cook, beauty, art, or useful.", path: ["ideaKind"] });
+    }
+    if (!value.title?.trim()) {
+      ctx.addIssue({ code: "custom", message: "Title is required.", path: ["title"] });
+    }
+    if (!value.materials?.trim()) {
+      ctx.addIssue({ code: "custom", message: "Materials are required.", path: ["materials"] });
+    }
+    if (value.steps == null) {
+      ctx.addIssue({ code: "custom", message: "Steps are required.", path: ["steps"] });
+    }
+  });
 
 const logSchema = z
   .object({
@@ -586,10 +601,21 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
     const parsed = submissionSchema.safeParse(await readJson(c));
     if (!parsed.success) throw new HttpError(400, zodMessage(parsed.error));
     const body = parsed.data;
-    const steps = normalizeSteps(body.steps);
+    const withIdea =
+      body.ideaKind != null &&
+      body.title != null &&
+      body.title.trim().length > 0 &&
+      body.materials != null &&
+      body.materials.trim().length > 0 &&
+      body.steps != null;
+    const steps = withIdea ? normalizeSteps(body.steps!) : null;
     const disposalNote = body.disposalNote?.trim() ?? "";
     const decodedImage = body.image ? decodeIdeaImage(body.image) : null;
     const decodedItemImage = body.itemImage ? decodeIdeaImage(body.itemImage) : null;
+
+    if (!withIdea && decodedImage) {
+      throw new HttpError(400, "An idea picture needs an idea. Add a recipe, or omit the picture.");
+    }
 
     const result = withTransaction(db, () => {
       requireProfile(db, body.profileId);
@@ -605,11 +631,14 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
       let itemImageFilename: string | null = null;
 
       if (existing) {
+        if (!withIdea) {
+          throw new HttpError(400, "That item already exists. Add a recipe to it instead.");
+        }
         itemId = existing.id;
         itemImageFilename = existing.image_filename;
       } else {
         itemId = uniqueItemId(db, body.itemName);
-        const summary = body.title.trim();
+        const summary = withIdea ? body.title!.trim() : body.itemName.trim();
         itemImageFilename = decodedItemImage ? `${itemId}.${decodedItemImage.ext}` : null;
         db.prepare(
           `INSERT INTO items (id, name, aliases, category_id, summary, image_filename, status, created_at)
@@ -639,25 +668,32 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
         }
       }
 
-      const ideaId = crypto.randomUUID();
-      const imageFilename = decodedImage ? `${ideaId}.${decodedImage.ext}` : null;
-      db.prepare(
-        `INSERT INTO ideas (id, item_id, kind, title, materials, steps, image_filename, author_profile_id, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)`,
-      ).run(
-        ideaId,
-        itemId,
-        body.ideaKind,
-        body.title,
-        body.materials,
-        JSON.stringify(steps),
-        imageFilename,
-        body.profileId,
-        nowIso(),
-      );
+      let idea:
+        | { id: string; title: string; imageUrl: string | null }
+        | null = null;
 
-      if (decodedImage && imageFilename) {
-        fs.writeFileSync(path.join(imagesDir, imageFilename), decodedImage.buffer);
+      if (withIdea) {
+        const ideaId = crypto.randomUUID();
+        const imageFilename = decodedImage ? `${ideaId}.${decodedImage.ext}` : null;
+        db.prepare(
+          `INSERT INTO ideas (id, item_id, kind, title, materials, steps, image_filename, author_profile_id, status, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)`,
+        ).run(
+          ideaId,
+          itemId,
+          body.ideaKind!,
+          body.title!.trim(),
+          body.materials!.trim(),
+          JSON.stringify(steps),
+          imageFilename,
+          body.profileId,
+          nowIso(),
+        );
+
+        if (decodedImage && imageFilename) {
+          fs.writeFileSync(path.join(imagesDir, imageFilename), decodedImage.buffer);
+        }
+        idea = { id: ideaId, title: body.title!.trim(), imageUrl: ideaImageUrl(imageFilename) };
       }
 
       const total = addPoints(db, body.profileId, points);
@@ -679,7 +715,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
           created: createdItem,
           imageUrl: itemImageUrl(item.image_filename),
         },
-        idea: { id: ideaId, title: body.title, imageUrl: ideaImageUrl(imageFilename) },
+        idea,
         pointsAwarded: points,
         points: total,
         badgesUnlocked,

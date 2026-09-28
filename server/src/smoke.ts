@@ -219,8 +219,20 @@ assert(imageBytes.length > 0, "idea image body should not be empty");
 const traversal = await app.request("/idea-images/../package.json");
 assert(traversal.status === 404, "image route should reject path traversal");
 
+const itemOnlyDup = await app.request("/submissions", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    profileId: "person-1",
+    category: "food",
+    itemName: "Banana peels",
+  }),
+});
+assert(itemOnlyDup.status === 400, "item-only submit should reject an existing name");
+
 const fresh = await json<{
   item: { id: string; created: boolean; name: string; imageUrl: string | null };
+  idea: { id: string; title: string } | null;
   pointsAwarded: number;
 }>(
   await app.request("/submissions", {
@@ -230,25 +242,23 @@ const fresh = await json<{
       profileId: "person-1",
       category: "other",
       itemName: "Wine corks",
-      ideaKind: "art",
-      title: "Cork trivet",
-      materials: "Wine corks\nGlue",
-      steps: ["Slice corks into coins.", "Glue them into a square.", "Let the glue dry before you set a pot on it."],
       disposalNote: "Natural cork can be composted. Plastic corks are trash.",
       itemImage: { mime: "image/png", data: TINY_PNG_BASE64 },
     }),
   }),
 );
 assert(fresh.item.created && fresh.pointsAwarded === 25, "new item should be 25 points");
+assert(fresh.idea == null, "item-only submit should not create an idea");
 assert(fresh.item.imageUrl?.startsWith("/item-images/") && fresh.item.imageUrl.endsWith(".png"), "item imageUrl missing");
 const cork = await json<{
-  item: { imageUrl: string | null };
+  item: { imageUrl: string | null; summary: string };
   disposal: { source: string; steps: string[] };
   ideas: { title: string }[];
 }>(await app.request(`/items/${fresh.item.id}`));
 assert(cork.item.imageUrl === fresh.item.imageUrl, "item detail should include item imageUrl");
+assert(cork.item.summary === "Wine corks", "item-only summary should use the item name");
 assert(cork.disposal.source === "item", "disposal note should become item guidance");
-assert(cork.ideas.some((idea) => idea.title === "Cork trivet"), "new idea should be searchable on the item");
+assert(cork.ideas.length === 0, "item-only submit should leave the item without ideas");
 const itemImageRes = await app.request(fresh.item.imageUrl!);
 assert(itemImageRes.status === 200, "item image should be served");
 assert(itemImageRes.headers.get("content-type") === "image/png", "item image content-type should be png");
@@ -260,6 +270,21 @@ const foundCork = await json<{ items: { name: string; imageUrl: string | null }[
 assert(
   foundCork.items.some((item) => item.name === "Wine corks" && item.imageUrl === fresh.item.imageUrl),
   "new item should show up in search with imageUrl",
+);
+await json(
+  await app.request("/submissions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      profileId: "person-1",
+      category: "other",
+      itemName: "Wine corks",
+      ideaKind: "art",
+      title: "Cork trivet",
+      materials: "Wine corks\nGlue",
+      steps: ["Slice corks into coins.", "Glue them into a square.", "Let the glue dry before you set a pot on it."],
+    }),
+  }),
 );
 await json(
   await app.request("/submissions", {

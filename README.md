@@ -45,7 +45,7 @@ On a wide browser window the app stays in a centered column so it still reads as
 - **Log** — your history on this phone: points, reuses / disposals / ideas shared, and the recent list. A Badges card here opens the gallery. The display name is not edited here.
 - **Badges** — the collection: all six achievements with pictures, locked or unlocked. Opened from Log, not from a tab.
 - **Leaderboard** — friendly rank by points. Not your personal gallery.
-- **Submit** — Add item or Add recipe as the saved display name. Add item creates a catalog entry with a first reuse idea. Add recipe attaches an idea to an existing item (search) or creates a new item first. Ideas can include an optional picture.
+- **Submit** — Add item or Add recipe as the saved display name. Add item creates a catalog entry (name, category, optional picture and disposal note). Add recipe attaches an idea to an existing item (search) or creates a new item first. Ideas can include an optional picture.
 - **Settings / Account** — prefs and the display name. Badges are not a setting.
 
 Tabs: Dashboard, Log, Submit (the round button), Leaderboard, and Settings.
@@ -59,6 +59,6 @@ Tabs: Dashboard, Log, Submit (the round button), Leaderboard, and Settings.
 - Open Log for points and recent actions. Tap **Badges** there to see the illustrated collection.
 - Settings is a grouped list. Account is where you set or change the display name. The other rows open placeholder screens that say they are under construction.
 - Open the leaderboard. Neighborhood, City, and World are placeholder divisions; rankings stay by points. It is friendly competition, not a verified ranking.
-- Submit an item (new catalog entry plus a first idea) or a recipe. On a recipe, search for an existing item or create one, then publish the idea. You can attach an optional picture to the idea.
+- Submit an item (catalog entry only) or a recipe. On a recipe, search for an existing item or create one, then publish the idea. You can attach an optional picture to the idea.
 
 Points: reuse 10, responsible disposal 5, trash 2, idea on an existing item 15, new item 25.

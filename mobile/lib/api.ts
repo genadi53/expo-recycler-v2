@@ -88,10 +88,10 @@ export const api = {
     profileId: string;
     category: string;
     itemName: string;
-    ideaKind: string;
-    title: string;
-    materials: string;
-    steps: string;
+    ideaKind?: string;
+    title?: string;
+    materials?: string;
+    steps?: string;
     disposalNote?: string;
     image?: IdeaImagePayload;
     itemImage?: IdeaImagePayload;

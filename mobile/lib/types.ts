@@ -138,7 +138,7 @@ export type LogResult = {
 
 export type SubmissionResult = {
   item: { id: string; name: string; categoryId: string; categoryName: string; created: boolean; imageUrl: string | null };
-  idea: { id: string; title: string; imageUrl: string | null };
+  idea: { id: string; title: string; imageUrl: string | null } | null;
   pointsAwarded: number;
   points: number;
   badgesUnlocked: UnlockedBadge[];
