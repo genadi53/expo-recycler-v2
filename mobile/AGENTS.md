@@ -1,3 +1,5 @@
+Repo-wide agent rules (including **Git finish**): see [`../AGENTS.md`](../AGENTS.md).
+
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
 ## Expo has changed — do not trust your training data

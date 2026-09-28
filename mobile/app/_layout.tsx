@@ -39,6 +39,8 @@ export default function RootLayout() {
                   name="display-name"
                   options={{ gestureEnabled: false, animation: "fade" }}
                 />
+                <Stack.Screen name="browse" />
+                <Stack.Screen name="recipes" />
                 <Stack.Screen name="results" />
                 <Stack.Screen name="category/[id]" />
                 <Stack.Screen name="item/[id]" />

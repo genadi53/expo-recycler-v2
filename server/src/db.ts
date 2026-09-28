@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS ideas (
   title TEXT NOT NULL,
   materials TEXT NOT NULL,
   steps TEXT NOT NULL,
+  image_filename TEXT,
   author_profile_id TEXT REFERENCES profiles(id),
   status TEXT NOT NULL CHECK (status IN ('published', 'pending')),
   created_at TEXT NOT NULL
@@ -84,6 +85,32 @@ CREATE TABLE IF NOT EXISTS profile_badges (
 );
 `;
 
+function migrateIdeasImageColumn(db: DB) {
+  const columns = db.prepare("PRAGMA table_info(ideas)").all() as { name: string }[];
+  if (!columns.some((column) => column.name === "image_filename")) {
+    db.exec("ALTER TABLE ideas ADD COLUMN image_filename TEXT");
+  }
+}
+
+export function resolveDatabasePath(
+  file = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "recycler.db"),
+): string {
+  return file;
+}
+
+export function resolveImagesDir(databasePath: string, override = process.env.IDEA_IMAGES_PATH): string {
+  if (override && override.trim()) return path.resolve(override.trim());
+  if (databasePath === ":memory:") {
+    return path.join(process.cwd(), "data", "idea-images");
+  }
+  return path.join(path.dirname(path.resolve(databasePath)), "idea-images");
+}
+
+export function ensureImagesDir(imagesDir: string): string {
+  fs.mkdirSync(imagesDir, { recursive: true });
+  return imagesDir;
+}
+
 export function openDatabase(file = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "recycler.db")): DB {
   if (file !== ":memory:") {
     fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
@@ -95,6 +122,7 @@ export function openDatabase(file = process.env.DATABASE_PATH ?? path.join(proce
     db.exec("PRAGMA journal_mode = WAL");
   }
   db.exec(SCHEMA);
+  migrateIdeasImageColumn(db);
   seedIfEmpty(db);
   return db;
 }
