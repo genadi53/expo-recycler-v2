@@ -19,6 +19,7 @@ export type Idea = {
   title: string;
   materials: string;
   steps: string[];
+  imageUrl: string | null;
   authorName: string | null;
 };
 
@@ -31,6 +32,12 @@ export type IdeaSummary = {
   itemName: string;
   categoryName: string;
   authorName: string | null;
+  imageUrl: string | null;
+};
+
+export type IdeaImagePayload = {
+  mime: "image/jpeg" | "image/png" | "image/webp";
+  data: string;
 };
 
 export type Disposal = {
@@ -130,7 +137,7 @@ export type LogResult = {
 
 export type SubmissionResult = {
   item: { id: string; name: string; categoryId: string; categoryName: string; created: boolean };
-  idea: { id: string; title: string };
+  idea: { id: string; title: string; imageUrl: string | null };
   pointsAwarded: number;
   points: number;
   badgesUnlocked: UnlockedBadge[];
