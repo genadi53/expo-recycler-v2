@@ -11,6 +11,7 @@ export type ItemSummary = {
   summary: string;
   categoryId: string;
   categoryName: string;
+  imageUrl: string | null;
 };
 
 export type Idea = {
@@ -136,7 +137,7 @@ export type LogResult = {
 };
 
 export type SubmissionResult = {
-  item: { id: string; name: string; categoryId: string; categoryName: string; created: boolean };
+  item: { id: string; name: string; categoryId: string; categoryName: string; created: boolean; imageUrl: string | null };
   idea: { id: string; title: string; imageUrl: string | null };
   pointsAwarded: number;
   points: number;

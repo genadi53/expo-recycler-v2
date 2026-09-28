@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0] & {
   onOpenCreate: () => void;
+  createOpen: boolean;
 };
 
 const TABS = {
@@ -18,7 +19,7 @@ const TABS = {
   settings: { label: "Settings", icon: "settings-outline" as const, iconOn: "settings" as const },
 };
 
-function RecyclerTabBar({ state, navigation, onOpenCreate }: TabBarProps) {
+function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -47,7 +48,7 @@ function RecyclerTabBar({ state, navigation, onOpenCreate }: TabBarProps) {
               key={route.key}
               accessibilityRole="button"
               accessibilityLabel="Create"
-              accessibilityState={{ selected: focused }}
+              accessibilityState={{ selected: createOpen }}
               onPress={onOpenCreate}
               style={styles.slot}
               testID="tab-submit"
@@ -92,7 +93,11 @@ export default function TabLayout() {
     <View style={styles.root}>
       <Tabs
         tabBar={(props) => (
-          <RecyclerTabBar {...props} onOpenCreate={() => setCreateOpen(true)} />
+          <RecyclerTabBar
+            {...props}
+            onOpenCreate={() => setCreateOpen(true)}
+            createOpen={createOpen}
+          />
         )}
         screenOptions={{ headerShown: false, tabBarShowLabel: false }}
       >

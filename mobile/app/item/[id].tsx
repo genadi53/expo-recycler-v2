@@ -29,6 +29,7 @@ export default function ItemScreen() {
   }
 
   const accent = categoryAccent[data.item.categoryId] ?? colors.green;
+  const itemImageUri = absoluteApiUrl(data.item.imageUrl);
   return (
     <Screen
       title={data.item.categoryName}
@@ -38,6 +39,9 @@ export default function ItemScreen() {
       <View style={styles.header}>
         <Text style={[styles.kicker, { color: accent }]}>{data.item.categoryName}</Text>
         <Text style={styles.name}>{data.item.name}</Text>
+        {itemImageUri ? (
+          <Image source={{ uri: itemImageUri }} style={styles.itemImage} accessibilityLabel={`${data.item.name} picture`} />
+        ) : null}
         <Text style={styles.summary}>{data.item.summary}</Text>
       </View>
 
@@ -105,6 +109,13 @@ const styles = StyleSheet.create({
   header: { gap: 6 },
   kicker: { fontSize: 12, fontWeight: "800", letterSpacing: 0.6, textTransform: "uppercase" },
   name: { fontFamily: serif, fontSize: 34, color: colors.ink },
+  itemImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 16,
+    backgroundColor: colors.line,
+    marginTop: 4,
+  },
   summary: { fontSize: 16, lineHeight: 22, color: colors.ink },
   section: { fontFamily: serif, fontSize: 26, color: colors.ink, marginTop: 8 },
   card: {
