@@ -22,6 +22,17 @@ export type Idea = {
   authorName: string | null;
 };
 
+export type IdeaSummary = {
+  id: string;
+  kind: Idea["kind"];
+  title: string;
+  materials: string;
+  itemId: string;
+  itemName: string;
+  categoryName: string;
+  authorName: string | null;
+};
+
 export type Disposal = {
   method: "recycle" | "compost" | "drop-off" | "hazardous" | "trash";
   title: string;

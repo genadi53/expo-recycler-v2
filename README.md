@@ -38,6 +38,7 @@ On a wide browser window the app stays in a centered column so it still reads as
 - **Display name** — pick the name used on this phone. After that, Account is the only place to change it.
 - **Dashboard** — your stats home: logo, points, contribution graph, charts, and CTAs. Search is not here. (The Settings row named Dashboard stays a later placeholder.)
 - **Browse** — find something: search and category cards. Opened from Dashboard CTAs, Shortcuts Search, or Log’s “Find an item.”
+- **Recipes** — cook ideas from the catalog in a grid. Dashboard shows four in a 2×2 preview with a link to this screen; Shortcuts Recipe opens it too.
 - **Results** — pick a match, or offer “add this” when nothing fits.
 - **Category** — browse items for one material.
 - **Item** — decide: reuse idea vs disposal path, then log what you did.

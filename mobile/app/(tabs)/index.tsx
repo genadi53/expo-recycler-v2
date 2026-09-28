@@ -1,13 +1,17 @@
 import { ContributionGraph } from "@/components/contribution-graph";
 import { useProfile } from "@/components/profile";
+import { RecipePreview } from "@/components/recipe-grid";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { Button, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
+import { api } from "@/lib/api";
 import type { CategoryCount, ProfileSnapshot } from "@/lib/types";
+import { useQuery } from "@/lib/use-query";
 import { router, type Href } from "expo-router";
 import { Image, StyleSheet, Text, View } from "react-native";
 
 export default function DashboardScreen() {
   const { ready, profile, snapshot, error, refresh } = useProfile();
+  const recipes = useQuery("dashboard-recipes", () => api.ideas({ kind: "cook", limit: 4 }));
 
   if (!ready) {
     return (
@@ -29,6 +33,7 @@ export default function DashboardScreen() {
           actionLabel="Open Account"
           onAction={() => router.push("/settings/account" as Href)}
         />
+        {recipes.status === "ready" && recipes.data ? <RecipePreview recipes={recipes.data.ideas} /> : null}
         <View style={styles.ctaBlock}>
           <Button label="Find an item" onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
         </View>
@@ -61,6 +66,7 @@ export default function DashboardScreen() {
       <ContributionGraph activity={snapshot.activity ?? []} />
       <ActionSplit reuses={snapshot.counts.reuses} disposals={snapshot.counts.disposals} />
       <CategoryBars rows={snapshot.byCategory ?? []} />
+      {recipes.status === "ready" && recipes.data ? <RecipePreview recipes={recipes.data.ideas} /> : null}
       <View style={styles.ctaBlock}>
         <Button label="Find an item" onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
         <Button

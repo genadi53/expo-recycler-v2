@@ -138,6 +138,15 @@ for (const itemId of ["citrus-peels", "eggshells", "pet-bottles", "aluminum-cans
   );
 }
 
+const recipes = await json<{ ideas: { id: string; kind: string; title: string; itemId: string; itemName: string }[] }>(
+  await app.request("/ideas?kind=cook&limit=4"),
+);
+assert(recipes.ideas.length === 4, `expected 4 cook recipes, got ${recipes.ideas.length}`);
+assert(recipes.ideas.every((idea) => idea.kind === "cook" && idea.itemId && idea.title), "recipe fields missing");
+
+const badKind = await app.request("/ideas?kind=snack");
+assert(badKind.status === 400, "bad idea kind should 400");
+
 const afterLogs = await json<{
   points: number;
   counts: { reuses: number; disposals: number; logs: number };

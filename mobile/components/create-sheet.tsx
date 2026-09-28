@@ -30,7 +30,7 @@ type ListShortcut = {
 
 const CIRCLES: CircleShortcut[] = [
   { label: "Recycle", icon: "leaf-outline", href: "/results", testID: "shortcut-recycle" },
-  { label: "Recipe", icon: "restaurant-outline", href: "/submit?kind=cook", testID: "shortcut-recipe" },
+  { label: "Recipe", icon: "restaurant-outline", href: "/recipes", testID: "shortcut-recipe" },
   { label: "Scan", icon: "barcode-outline", href: "/scan", testID: "shortcut-scan" },
   { label: "Search", icon: "search-outline", href: "/browse", testID: "shortcut-search" },
 ];
