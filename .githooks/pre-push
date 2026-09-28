@@ -1,0 +1,13 @@
+#!/bin/sh
+# Deploy the Recycler API before accepting the push. A failed deploy aborts the push.
+set -e
+
+if [ -x "$HOME/.fly/bin/fly" ]; then
+  PATH="$HOME/.fly/bin:$PATH"
+  export PATH
+fi
+
+root=$(git rev-parse --show-toplevel)
+echo "Deploying server/ to Fly app recycler-api..."
+cd "$root/server"
+fly deploy --ha=false -y
