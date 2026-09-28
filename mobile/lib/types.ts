@@ -22,6 +22,17 @@ export type Idea = {
   authorName: string | null;
 };
 
+export type IdeaSummary = {
+  id: string;
+  kind: Idea["kind"];
+  title: string;
+  materials: string;
+  itemId: string;
+  itemName: string;
+  categoryName: string;
+  authorName: string | null;
+};
+
 export type Disposal = {
   method: "recycle" | "compost" | "drop-off" | "hazardous" | "trash";
   title: string;
@@ -62,6 +73,17 @@ export type LogEntry = {
   ideaTitle: string | null;
 };
 
+export type ActivityDay = {
+  date: string;
+  count: number;
+};
+
+export type CategoryCount = {
+  id: string;
+  name: string;
+  count: number;
+};
+
 export type ProfileSnapshot = {
   id: string;
   displayName: string;
@@ -72,6 +94,8 @@ export type ProfileSnapshot = {
     ideasShared: number;
     logs: number;
   };
+  activity: ActivityDay[];
+  byCategory: CategoryCount[];
   badges: Badge[];
   recent: LogEntry[];
 };

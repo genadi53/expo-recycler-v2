@@ -138,13 +138,34 @@ for (const itemId of ["citrus-peels", "eggshells", "pet-bottles", "aluminum-cans
   );
 }
 
+const recipes = await json<{ ideas: { id: string; kind: string; title: string; itemId: string; itemName: string }[] }>(
+  await app.request("/ideas?kind=cook&limit=4"),
+);
+assert(recipes.ideas.length === 4, `expected 4 cook recipes, got ${recipes.ideas.length}`);
+assert(recipes.ideas.every((idea) => idea.kind === "cook" && idea.itemId && idea.title), "recipe fields missing");
+
+const badKind = await app.request("/ideas?kind=snack");
+assert(badKind.status === 400, "bad idea kind should 400");
+
 const afterLogs = await json<{
   points: number;
   counts: { reuses: number; disposals: number; logs: number };
+  activity: { date: string; count: number }[];
+  byCategory: { id: string; name: string; count: number }[];
   badges: { slug: string; unlockedAt: string | null }[];
 }>(await app.request("/profiles/person-1"));
 assert(afterLogs.counts.reuses === 5, `expected 5 reuses, got ${afterLogs.counts.reuses}`);
 assert(afterLogs.counts.disposals === 2, "expected 2 disposals");
+assert(afterLogs.activity.length >= 1, "activity should include logged days");
+assert(
+  afterLogs.activity.every((day) => /^\d{4}-\d{2}-\d{2}$/.test(day.date) && day.count > 0),
+  "activity days should be YYYY-MM-DD with counts",
+);
+assert(afterLogs.byCategory.length >= 1, "byCategory should include logged categories");
+assert(
+  afterLogs.byCategory.reduce((sum, row) => sum + row.count, 0) === afterLogs.counts.logs,
+  "byCategory totals should match log count",
+);
 assert(afterLogs.badges.find((badge) => badge.slug === "maker")?.unlockedAt, "maker badge missing");
 assert(afterLogs.badges.find((badge) => badge.slug === "curious")?.unlockedAt, "curious badge missing");
 

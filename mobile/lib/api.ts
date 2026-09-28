@@ -1,5 +1,6 @@
 import type {
   Category,
+  IdeaSummary,
   ItemDetail,
   ItemSummary,
   Leaderboard,
@@ -59,6 +60,13 @@ export const api = {
     return request<{ items: ItemSummary[] }>(`/items${query ? `?${query}` : ""}`);
   },
   item: (id: string) => request<ItemDetail>(`/items/${encodeURIComponent(id)}`),
+  ideas: (params: { kind?: string; limit?: number } = {}) => {
+    const search = new URLSearchParams();
+    if (params.kind) search.set("kind", params.kind);
+    if (params.limit) search.set("limit", String(params.limit));
+    const query = search.toString();
+    return request<{ ideas: IdeaSummary[] }>(`/ideas${query ? `?${query}` : ""}`);
+  },
   saveProfile: (id: string, displayName: string) =>
     request<SavedProfile>(`/profiles/${encodeURIComponent(id)}`, {
       method: "PUT",

@@ -188,6 +188,36 @@ function profilePayload(db: DB, profileId: string) {
     )
     .all(profileId);
 
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 366);
+  const sinceIso = since.toISOString();
+
+  const activity = (
+    db
+      .prepare(
+        `SELECT substr(created_at, 1, 10) AS date, COUNT(*) AS count
+         FROM log_entries
+         WHERE profile_id = ? AND created_at >= ?
+         GROUP BY substr(created_at, 1, 10)
+         ORDER BY date`,
+      )
+      .all(profileId, sinceIso) as { date: string; count: number }[]
+  ).map((row) => ({ date: row.date, count: Number(row.count) }));
+
+  const byCategory = (
+    db
+      .prepare(
+        `SELECT c.id, c.name, COUNT(*) AS count
+         FROM log_entries l
+         JOIN items i ON i.id = l.item_id
+         JOIN categories c ON c.id = i.category_id
+         WHERE l.profile_id = ?
+         GROUP BY c.id, c.name
+         ORDER BY count DESC, c.name ASC`,
+      )
+      .all(profileId) as { id: string; name: string; count: number }[]
+  ).map((row) => ({ id: row.id, name: row.name, count: Number(row.count) }));
+
   return {
     id: profile.id,
     displayName: profile.display_name,
@@ -198,6 +228,8 @@ function profilePayload(db: DB, profileId: string) {
       ideasShared: stats.ideas,
       logs: stats.logs,
     },
+    activity,
+    byCategory,
     badges,
     recent,
   };
@@ -262,6 +294,34 @@ export function createApp(db: DB) {
     sql += " ORDER BY i.name COLLATE NOCASE";
     const items = db.prepare(sql).all(...params);
     return c.json({ items });
+  });
+
+  app.get("/ideas", (c) => {
+    const kind = (c.req.query("kind") ?? "").trim();
+    const limitRaw = Number(c.req.query("limit") ?? "0");
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 100) : 0;
+    if (kind && !(IDEA_KINDS as readonly string[]).includes(kind)) {
+      throw new HttpError(400, "Pick a kind: cook, beauty, art, or useful.");
+    }
+    const params: string[] = [];
+    let sql = `
+      SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.created_at,
+             i.id AS itemId, i.name AS itemName, c.name AS categoryName,
+             profiles.display_name AS authorName
+      FROM ideas
+      JOIN items i ON i.id = ideas.item_id AND i.status = 'published'
+      JOIN categories c ON c.id = i.category_id
+      LEFT JOIN profiles ON profiles.id = ideas.author_profile_id
+      WHERE ideas.status = 'published'
+    `;
+    if (kind) {
+      sql += " AND ideas.kind = ?";
+      params.push(kind);
+    }
+    sql += " ORDER BY ideas.created_at DESC, ideas.rowid DESC";
+    if (limit) sql += ` LIMIT ${limit}`;
+    const ideas = db.prepare(sql).all(...params);
+    return c.json({ ideas });
   });
 
   app.get("/items/:id", (c) => {
