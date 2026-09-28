@@ -72,7 +72,7 @@ export default function DashboardScreen() {
         <Button
           label="Share an idea"
           tone="secondary"
-          onPress={() => router.push("/submit" as Href)}
+          onPress={() => router.push("/submit?mode=idea" as Href)}
           testID="cta-submit"
         />
         <Button

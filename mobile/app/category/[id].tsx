@@ -25,7 +25,7 @@ export default function CategoryScreen() {
           title="Nothing in this category yet"
           body="Submit an item and it will land here as soon as it is published."
           actionLabel="Add an item"
-          onAction={() => router.push(`/submit?category=${id}` as Href)}
+          onAction={() => router.push(`/submit?mode=item&category=${id}` as Href)}
         />
       ) : null}
       {status === "ready" && data
