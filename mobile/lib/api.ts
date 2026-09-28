@@ -9,7 +9,7 @@ import type {
   SubmissionResult,
 } from "@/lib/types";
 
-const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "http://127.0.0.1:47821").replace(/\/$/, "");
+const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://recycler-api.fly.dev").replace(/\/$/, "");
 
 export class ApiError extends Error {
   status: number;

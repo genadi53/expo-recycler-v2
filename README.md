@@ -26,7 +26,9 @@ npm install
 npm run web
 ```
 
-Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The first launch shows a four-screen tour, then asks for a display name once. After that the app opens on Dashboard. The app calls the API at `http://127.0.0.1:47821`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
+Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The first launch shows a four-screen tour, then asks for a display name once. After that the app opens on Dashboard. The app calls the API at `https://recycler-api.fly.dev`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
+
+After clone, run `git config core.hooksPath .githooks` so a push deploys `server/` to the Fly app `recycler-api`.
 
 On a wide browser window the app stays in a centered column so it still reads as a phone. The same Expo project can run on iOS and Android with `npm start` inside `mobile/`.
 
