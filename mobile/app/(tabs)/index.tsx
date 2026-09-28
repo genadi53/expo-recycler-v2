@@ -132,11 +132,11 @@ function ActionSplit({ reuses, disposals }: { reuses: number; disposals: number 
       </Text>
       <View style={styles.splitTrack}>
         {total === 0 ? (
-          <View style={[styles.splitEmpty]} />
+          <View style={styles.splitEmpty} />
         ) : (
           <>
-            <View style={[styles.splitReuse, { flex: Math.max(reusePct, 0.02) }]} />
-            <View style={[styles.splitDispose, { flex: Math.max(disposePct, 0.02) }]} />
+            {reuses > 0 ? <View style={[styles.splitReuse, { flex: reusePct }]} /> : null}
+            {disposals > 0 ? <View style={[styles.splitDispose, { flex: disposePct }]} /> : null}
           </>
         )}
       </View>
