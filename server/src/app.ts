@@ -372,8 +372,8 @@ export function createApp(db: DB, imagesDir: string) {
     }
     const params: string[] = [];
     let sql = `
-      SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.created_at,
-             i.id AS itemId, i.name AS itemName, c.name AS categoryName,
+      SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.image_filename,
+             ideas.created_at, i.id AS itemId, i.name AS itemName, c.name AS categoryName,
              profiles.display_name AS authorName
       FROM ideas
       JOIN items i ON i.id = ideas.item_id AND i.status = 'published'
@@ -387,7 +387,29 @@ export function createApp(db: DB, imagesDir: string) {
     }
     sql += " ORDER BY ideas.created_at DESC, ideas.rowid DESC";
     if (limit) sql += ` LIMIT ${limit}`;
-    const ideas = db.prepare(sql).all(...params);
+    const ideas = (
+      db.prepare(sql).all(...params) as {
+        id: string;
+        kind: string;
+        title: string;
+        materials: string;
+        image_filename: string | null;
+        itemId: string;
+        itemName: string;
+        categoryName: string;
+        authorName: string | null;
+      }[]
+    ).map((idea) => ({
+      id: idea.id,
+      kind: idea.kind,
+      title: idea.title,
+      materials: idea.materials,
+      itemId: idea.itemId,
+      itemName: idea.itemName,
+      categoryName: idea.categoryName,
+      authorName: idea.authorName,
+      imageUrl: ideaImageUrl(idea.image_filename),
+    }));
     return c.json({ ideas });
   });
 
