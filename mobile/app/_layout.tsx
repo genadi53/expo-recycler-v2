@@ -2,6 +2,7 @@ import { OnboardingGate } from "@/components/onboarding-gate";
 import { ProfileProvider } from "@/components/profile";
 import { colors } from "@/components/theme";
 import { Stack } from "expo-router";
+import Head from "expo-router/head";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { Platform, StyleSheet, View } from "react-native";
@@ -16,6 +17,10 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ProfileProvider>
         <OnboardingGate>
+          <Head>
+            <title>Recycler</title>
+            <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+          </Head>
           <StatusBar style="dark" />
           <View style={styles.stage}>
             <View style={styles.phone}>
