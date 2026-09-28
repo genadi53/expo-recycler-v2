@@ -36,14 +36,16 @@ On a wide browser window the app stays in a centered column so it still reads as
 
 - **Onboarding** — first-launch tour only (look up, reuse, log, keep going). Not a home.
 - **Display name** — pick the name used on this phone. After that, Account is the only place to change it.
-- **Dashboard** — find something: search and category cards. Not stats, not badges. (The Settings row named Dashboard stays a later placeholder.)
+- **Dashboard** — your stats home: logo, points, contribution graph, charts, and CTAs. Search is not here. (The Settings row named Dashboard stays a later placeholder.)
+- **Browse** — find something: search and category cards. Opened from Dashboard CTAs, Shortcuts Search, or Log’s “Find an item.”
+- **Recipes** — cook ideas from the catalog in a grid. Dashboard shows four in a 2×2 preview with a link to this screen; Shortcuts Recipe opens it too.
 - **Results** — pick a match, or offer “add this” when nothing fits.
 - **Category** — browse items for one material.
 - **Item** — decide: reuse idea vs disposal path, then log what you did.
 - **Log** — your history on this phone: points, reuses / disposals / ideas shared, and the recent list. A Badges card here opens the gallery. The display name is not edited here.
 - **Badges** — the collection: all six achievements with pictures, locked or unlocked. Opened from Log, not from a tab.
 - **Leaderboard** — friendly rank by points. Not your personal gallery.
-- **Submit** — publish an item or idea as the saved display name.
+- **Submit** — publish an item or idea as the saved display name. Ideas can include an optional picture.
 - **Settings / Account** — prefs and the display name. Badges are not a setting.
 
 Tabs: Dashboard, Log, Submit (the round button), Leaderboard, and Settings.
@@ -57,6 +59,6 @@ Tabs: Dashboard, Log, Submit (the round button), Leaderboard, and Settings.
 - Open Log for points and recent actions. Tap **Badges** there to see the illustrated collection.
 - Settings is a grouped list. Account is where you set or change the display name. The other rows open placeholder screens that say they are under construction.
 - Open the leaderboard. Neighborhood, City, and World are placeholder divisions; rankings stay by points. It is friendly competition, not a verified ranking.
-- Submit an item or an idea. A matching name gets the idea; a new name becomes an item.
+- Submit an item or an idea. A matching name gets the idea; a new name becomes an item. You can attach an optional picture to the idea.
 
 Points: reuse 10, responsible disposal 5, trash 2, idea on an existing item 15, new item 25.

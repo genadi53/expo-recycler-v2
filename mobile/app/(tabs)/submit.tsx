@@ -3,25 +3,50 @@ import { colors, serif } from "@/components/theme";
 import { Banner, Button, Chip, EmptyState, ErrorState, Field, Input, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { KIND_LABEL } from "@/lib/format";
-import type { SubmissionResult } from "@/lib/types";
+import type { IdeaImagePayload, SubmissionResult } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
+import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 const KINDS = ["cook", "beauty", "art", "useful"] as const;
+type IdeaKind = (typeof KINDS)[number];
+
+const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
+
+type PickedPicture = {
+  uri: string;
+  payload: IdeaImagePayload;
+};
+
+function parseKind(value: string | undefined): IdeaKind | null {
+  if (!value) return null;
+  return (KINDS as readonly string[]).includes(value) ? (value as IdeaKind) : null;
+}
+
+function mimeFromAsset(asset: ImagePicker.ImagePickerAsset): IdeaImagePayload["mime"] | null {
+  const declared = asset.mimeType?.toLowerCase();
+  if (declared === "image/jpeg" || declared === "image/png" || declared === "image/webp") return declared;
+  const uri = asset.uri.toLowerCase();
+  if (uri.endsWith(".jpg") || uri.endsWith(".jpeg")) return "image/jpeg";
+  if (uri.endsWith(".png")) return "image/png";
+  if (uri.endsWith(".webp")) return "image/webp";
+  return null;
+}
 
 export default function SubmitScreen() {
-  const params = useLocalSearchParams<{ item?: string; category?: string }>();
+  const params = useLocalSearchParams<{ item?: string; category?: string; kind?: string }>();
   const { profile, refresh } = useProfile();
   const { status, data, error, retry } = useQuery("submit-categories", () => api.categories());
   const [categoryId, setCategoryId] = useState("");
   const [itemName, setItemName] = useState("");
-  const [kind, setKind] = useState<(typeof KINDS)[number]>("cook");
+  const [kind, setKind] = useState<IdeaKind>("cook");
   const [title, setTitle] = useState("");
   const [materials, setMaterials] = useState("");
   const [steps, setSteps] = useState("");
   const [disposalNote, setDisposalNote] = useState("");
+  const [picture, setPicture] = useState<PickedPicture | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -37,6 +62,11 @@ export default function SubmitScreen() {
     const category = typeof params.category === "string" ? params.category : "";
     if (category) setCategoryId(category);
   }, [params.category]);
+
+  useEffect(() => {
+    const next = parseKind(typeof params.kind === "string" ? params.kind : undefined);
+    if (next) setKind(next);
+  }, [params.kind]);
 
   useEffect(() => {
     const trimmed = itemName.trim();
@@ -67,6 +97,33 @@ export default function SubmitScreen() {
     };
   }, [itemName]);
 
+  async function pickPicture() {
+    setFormError("");
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setFormError("Allow photo access to attach a picture, or publish without one.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const mime = mimeFromAsset(asset);
+    if (!mime || !asset.base64) {
+      setFormError("That picture could not be read. Try a JPEG, PNG, or WebP under 1.5 MB.");
+      return;
+    }
+    setPicture({
+      uri: asset.uri,
+      payload: { mime, data: asset.base64 },
+    });
+  }
+
   async function publish() {
     const nextErrors: Record<string, string> = {};
     if (!categoryId) nextErrors.category = "Pick a category.";
@@ -90,6 +147,7 @@ export default function SubmitScreen() {
         materials: materials.trim(),
         steps: steps.trim(),
         disposalNote: disposalNote.trim() || undefined,
+        image: picture?.payload,
       });
       await refresh();
       setSuccess(result);
@@ -107,6 +165,7 @@ export default function SubmitScreen() {
     setSteps("");
     setItemName("");
     setDisposalNote("");
+    setPicture(null);
     setMatchLabel("");
     setFieldErrors({});
     setFormError("");
@@ -235,6 +294,44 @@ export default function SubmitScreen() {
           testID="submit-steps"
         />
       </Field>
+      <Field label="Picture">
+        {picture ? (
+          <View style={styles.pictureBox}>
+            <Image source={{ uri: picture.uri }} style={styles.picture} accessibilityLabel="Selected idea picture" />
+            <View style={styles.pictureActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Change picture"
+                onPress={pickPicture}
+                style={({ pressed }) => [styles.pictureButton, pressed && styles.pressed, pointer]}
+                testID="change-picture"
+              >
+                <Text style={styles.pictureButtonLabel}>Change</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Remove picture"
+                onPress={() => setPicture(null)}
+                style={({ pressed }) => [styles.pictureButton, pressed && styles.pressed, pointer]}
+                testID="remove-picture"
+              >
+                <Text style={styles.pictureButtonLabel}>Remove</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add a picture"
+            onPress={pickPicture}
+            style={({ pressed }) => [styles.addPicture, pressed && styles.pressed, pointer]}
+            testID="add-picture"
+          >
+            <Text style={styles.addPictureLabel}>Add a picture</Text>
+            <Text style={styles.hint}>Optional. JPEG, PNG, or WebP under 1.5 MB.</Text>
+          </Pressable>
+        )}
+      </Field>
       <Field label="Disposal note">
         <Input
           value={disposalNote}
@@ -254,4 +351,32 @@ const styles = StyleSheet.create({
   body: { color: colors.ink, fontSize: 15, lineHeight: 21 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   hint: { color: colors.muted, fontSize: 13, lineHeight: 18 },
+  addPicture: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderStyle: "dashed",
+    borderRadius: 14,
+    padding: 16,
+    gap: 4,
+    backgroundColor: colors.card,
+  },
+  addPictureLabel: { fontSize: 16, fontWeight: "700", color: colors.green },
+  pictureBox: { gap: 10 },
+  picture: {
+    width: "100%",
+    height: 180,
+    borderRadius: 14,
+    backgroundColor: colors.line,
+  },
+  pictureActions: { flexDirection: "row", gap: 10 },
+  pictureButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+  },
+  pictureButtonLabel: { fontSize: 14, fontWeight: "700", color: colors.ink },
+  pressed: { opacity: 0.82 },
 });
