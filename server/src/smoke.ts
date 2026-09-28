@@ -141,10 +141,22 @@ for (const itemId of ["citrus-peels", "eggshells", "pet-bottles", "aluminum-cans
 const afterLogs = await json<{
   points: number;
   counts: { reuses: number; disposals: number; logs: number };
+  activity: { date: string; count: number }[];
+  byCategory: { id: string; name: string; count: number }[];
   badges: { slug: string; unlockedAt: string | null }[];
 }>(await app.request("/profiles/person-1"));
 assert(afterLogs.counts.reuses === 5, `expected 5 reuses, got ${afterLogs.counts.reuses}`);
 assert(afterLogs.counts.disposals === 2, "expected 2 disposals");
+assert(afterLogs.activity.length >= 1, "activity should include logged days");
+assert(
+  afterLogs.activity.every((day) => /^\d{4}-\d{2}-\d{2}$/.test(day.date) && day.count > 0),
+  "activity days should be YYYY-MM-DD with counts",
+);
+assert(afterLogs.byCategory.length >= 1, "byCategory should include logged categories");
+assert(
+  afterLogs.byCategory.reduce((sum, row) => sum + row.count, 0) === afterLogs.counts.logs,
+  "byCategory totals should match log count",
+);
 assert(afterLogs.badges.find((badge) => badge.slug === "maker")?.unlockedAt, "maker badge missing");
 assert(afterLogs.badges.find((badge) => badge.slug === "curious")?.unlockedAt, "curious badge missing");
 

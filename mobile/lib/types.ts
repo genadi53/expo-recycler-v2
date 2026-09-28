@@ -62,6 +62,17 @@ export type LogEntry = {
   ideaTitle: string | null;
 };
 
+export type ActivityDay = {
+  date: string;
+  count: number;
+};
+
+export type CategoryCount = {
+  id: string;
+  name: string;
+  count: number;
+};
+
 export type ProfileSnapshot = {
   id: string;
   displayName: string;
@@ -72,6 +83,8 @@ export type ProfileSnapshot = {
     ideasShared: number;
     logs: number;
   };
+  activity: ActivityDay[];
+  byCategory: CategoryCount[];
   badges: Badge[];
   recent: LogEntry[];
 };

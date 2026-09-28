@@ -1,112 +1,250 @@
+import { ContributionGraph } from "@/components/contribution-graph";
+import { useProfile } from "@/components/profile";
 import { categoryAccent, colors, serif } from "@/components/theme";
-import { Button, ErrorState, Input, LoadingState, Screen } from "@/components/ui";
-import { api } from "@/lib/api";
-import type { Category } from "@/lib/types";
-import { useQuery } from "@/lib/use-query";
+import { Button, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
+import type { CategoryCount, ProfileSnapshot } from "@/lib/types";
 import { router, type Href } from "expo-router";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
-export default function HomeScreen() {
-  const { status, data, error, retry } = useQuery("categories", () => api.categories());
-  const [query, setQuery] = useState("");
-  const [hint, setHint] = useState("");
+export default function DashboardScreen() {
+  const { ready, profile, snapshot, error, refresh } = useProfile();
 
-  function search() {
-    const q = query.trim();
-    if (!q) {
-      setHint("Type what you have.");
-      return;
-    }
-    setHint("");
-    router.push(`/results?q=${encodeURIComponent(q)}` as Href);
+  if (!ready) {
+    return (
+      <Screen>
+        <DashboardHeader />
+        <LoadingState label="Loading your dashboard…" />
+      </Screen>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <Screen>
+        <DashboardHeader />
+        <EmptyState
+          title="Pick a display name"
+          body="Your points, contribution graph, and charts stay with this name on this phone. Set it in Account under Settings."
+          icon="person-outline"
+          actionLabel="Open Account"
+          onAction={() => router.push("/settings/account" as Href)}
+        />
+        <View style={styles.ctaBlock}>
+          <Button label="Find an item" onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!snapshot && error) {
+    return (
+      <Screen>
+        <DashboardHeader />
+        <ErrorState message={error} onRetry={() => refresh().catch(() => {})} />
+      </Screen>
+    );
+  }
+
+  if (!snapshot) {
+    return (
+      <Screen>
+        <DashboardHeader />
+        <LoadingState label="Loading your dashboard…" />
+      </Screen>
+    );
   }
 
   return (
     <Screen>
-      <View style={styles.hero}>
-        <Text style={styles.mark}>Recycler</Text>
-        <Text style={styles.tagline}>What do you have, and can it be reused?</Text>
-        <Text style={styles.note}>A shared catalog for households. No account.</Text>
-      </View>
-
-      <View style={styles.searchBlock}>
-        <Input
-          value={query}
-          onChangeText={(value) => {
-            setQuery(value);
-            if (hint) setHint("");
-          }}
-          placeholder="Banana peels, jars, cans…"
-          returnKeyType="search"
-          onSubmitEditing={search}
-          testID="search-input"
-          autoCorrect={false}
+      <DashboardHeader />
+      <SummaryStrip snapshot={snapshot} />
+      <ContributionGraph activity={snapshot.activity ?? []} />
+      <ActionSplit reuses={snapshot.counts.reuses} disposals={snapshot.counts.disposals} />
+      <CategoryBars rows={snapshot.byCategory ?? []} />
+      <View style={styles.ctaBlock}>
+        <Button label="Find an item" onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
+        <Button
+          label="Share an idea"
+          tone="secondary"
+          onPress={() => router.push("/submit" as Href)}
+          testID="cta-submit"
         />
-        {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-        <Button label="Search the catalog" onPress={search} testID="search-submit" />
+        <Button
+          label="Open your log"
+          tone="quiet"
+          onPress={() => router.push("/log" as Href)}
+          testID="cta-log"
+        />
       </View>
-
-      <Text style={styles.section}>Or start with a material</Text>
-      {status === "loading" ? <LoadingState label="Looking through the catalog…" /> : null}
-      {status === "error" ? <ErrorState message={error} onRetry={retry} /> : null}
-      {status === "ready" && data?.categories.length === 0 ? (
-        <Text style={styles.note}>No categories yet.</Text>
-      ) : null}
-      {status === "ready" && data ? (
-        <View style={styles.grid}>
-          {data.categories.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
-        </View>
-      ) : null}
     </Screen>
   );
 }
 
-function CategoryCard({ category }: { category: Category }) {
-  const accent = categoryAccent[category.id] ?? colors.green;
+function DashboardHeader() {
   return (
-    <View style={styles.cardSlot}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push(`/category/${category.id}` as Href)}
-        style={styles.card}
-        testID={`category-${category.id}`}
-      >
-        <View style={[styles.cardBar, { backgroundColor: accent }]} />
-        <Text style={styles.cardName}>{category.name}</Text>
-        <Text style={styles.cardBody} numberOfLines={3}>
-          {category.description}
-        </Text>
-        <Text style={styles.cardCount}>
-          {category.itemCount} {category.itemCount === 1 ? "item" : "items"}
-        </Text>
-      </Pressable>
+    <View style={styles.header} testID="dashboard-header">
+      <Image
+        source={require("../../assets/images/icon.png")}
+        style={styles.logo}
+        accessibilityLabel="Recycler logo"
+      />
+      <Text style={styles.mark}>Recycler</Text>
+    </View>
+  );
+}
+
+function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
+  return (
+    <View style={styles.summary} testID="dashboard-summary">
+      <View>
+        <Text style={styles.hello}>{snapshot.displayName}</Text>
+        <Text style={styles.points}>{snapshot.points}</Text>
+        <Text style={styles.pointsLabel}>points on this phone</Text>
+      </View>
+      <View style={styles.counts}>
+        <Count label="Reuses" value={snapshot.counts.reuses} />
+        <Count label="Disposals" value={snapshot.counts.disposals} />
+        <Count label="Ideas" value={snapshot.counts.ideasShared} />
+      </View>
+    </View>
+  );
+}
+
+function Count({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.count}>
+      <Text style={styles.countValue}>{value}</Text>
+      <Text style={styles.countLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function ActionSplit({ reuses, disposals }: { reuses: number; disposals: number }) {
+  const total = reuses + disposals;
+  const reusePct = total === 0 ? 0 : reuses / total;
+  const disposePct = total === 0 ? 0 : disposals / total;
+
+  return (
+    <View style={styles.chartBlock} testID="action-split-chart">
+      <Text style={styles.section}>Reuse vs dispose</Text>
+      <Text style={styles.chartNote}>
+        {total === 0 ? "Log a reuse or disposal to see the split." : `${reuses} reuses · ${disposals} disposals`}
+      </Text>
+      <View style={styles.splitTrack}>
+        {total === 0 ? (
+          <View style={[styles.splitEmpty]} />
+        ) : (
+          <>
+            <View style={[styles.splitReuse, { flex: Math.max(reusePct, 0.02) }]} />
+            <View style={[styles.splitDispose, { flex: Math.max(disposePct, 0.02) }]} />
+          </>
+        )}
+      </View>
+      <View style={styles.splitLegend}>
+        <LegendDot color={colors.green} label="Reuse" />
+        <LegendDot color={colors.terra} label="Dispose" />
+      </View>
+    </View>
+  );
+}
+
+function CategoryBars({ rows }: { rows: CategoryCount[] }) {
+  const max = rows.reduce((n, row) => Math.max(n, row.count), 0);
+
+  return (
+    <View style={styles.chartBlock} testID="category-chart">
+      <Text style={styles.section}>By material</Text>
+      <Text style={styles.chartNote}>
+        {rows.length === 0 ? "Categories show up after you log an item." : "All-time actions by material."}
+      </Text>
+      {rows.map((row) => {
+        const accent = categoryAccent[row.id] ?? colors.green;
+        const width = max === 0 ? 0 : Math.max(8, (row.count / max) * 100);
+        return (
+          <View key={row.id} style={styles.barRow}>
+            <Text style={styles.barLabel} numberOfLines={1}>
+              {row.name}
+            </Text>
+            <View style={styles.barTrack}>
+              <View style={[styles.barFill, { width: `${width}%`, backgroundColor: accent }]} />
+            </View>
+            <Text style={styles.barValue}>{row.count}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+      <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { gap: 6 },
-  mark: { fontFamily: serif, fontSize: 40, color: colors.ink },
-  tagline: { fontSize: 18, lineHeight: 24, color: colors.ink },
-  note: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  searchBlock: { gap: 10 },
-  hint: { color: colors.terra, fontSize: 13 },
-  section: { fontFamily: serif, fontSize: 24, color: colors.ink, marginTop: 4 },
-  grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -6 },
-  cardSlot: { width: "50%", padding: 6 },
-  card: {
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+  },
+  mark: {
+    fontFamily: serif,
+    fontSize: 32,
+    color: colors.ink,
+  },
+  summary: { gap: 12 },
+  hello: { color: colors.muted, fontSize: 14, fontWeight: "700" },
+  points: { fontFamily: serif, fontSize: 48, color: colors.ink, lineHeight: 52 },
+  pointsLabel: { color: colors.muted, marginTop: -2 },
+  counts: { flexDirection: "row", gap: 8 },
+  count: {
+    flex: 1,
     backgroundColor: colors.card,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: 16,
-    padding: 12,
-    minHeight: 148,
+    padding: 10,
+    gap: 2,
   },
-  cardBar: { height: 6, borderRadius: 6, marginBottom: 8 },
-  cardName: { fontSize: 18, fontWeight: "700", color: colors.ink },
-  cardBody: { color: colors.muted, fontSize: 13, lineHeight: 18, marginTop: 4, minHeight: 54 },
-  cardCount: { marginTop: 8, color: colors.green, fontSize: 12, fontWeight: "700" },
+  countValue: { fontFamily: serif, fontSize: 24, color: colors.ink },
+  countLabel: { color: colors.muted, fontSize: 12 },
+  chartBlock: { gap: 8 },
+  section: { fontFamily: serif, fontSize: 24, color: colors.ink },
+  chartNote: { color: colors.muted, fontSize: 13, lineHeight: 18 },
+  splitTrack: {
+    height: 16,
+    borderRadius: 8,
+    overflow: "hidden",
+    flexDirection: "row",
+    backgroundColor: colors.line,
+    gap: 2,
+  },
+  splitEmpty: { flex: 1, backgroundColor: colors.line },
+  splitReuse: { backgroundColor: colors.green, borderRadius: 8 },
+  splitDispose: { backgroundColor: colors.terra, borderRadius: 8 },
+  splitLegend: { flexDirection: "row", gap: 16 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendLabel: { color: colors.muted, fontSize: 13 },
+  barRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  barLabel: { width: 64, color: colors.ink, fontSize: 13, fontWeight: "600" },
+  barTrack: {
+    flex: 1,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.line,
+    overflow: "hidden",
+  },
+  barFill: { height: "100%", borderRadius: 6 },
+  barValue: { width: 28, textAlign: "right", color: colors.muted, fontSize: 13, fontWeight: "700" },
+  ctaBlock: { gap: 10, marginTop: 4, marginBottom: 8 },
 });
