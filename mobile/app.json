@@ -8,7 +8,11 @@
     "scheme": "recycler",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Recycler uses your photo library so you can attach a picture to a reuse idea.",
+        "NSCameraUsageDescription": "Recycler uses the camera so you can photograph a reuse idea."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -32,6 +36,13 @@
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
           "backgroundColor": "#f4efe6"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Recycler uses your photo library so you can attach a picture to a reuse idea.",
+          "cameraPermission": "Recycler uses the camera so you can photograph a reuse idea."
         }
       ]
     ],

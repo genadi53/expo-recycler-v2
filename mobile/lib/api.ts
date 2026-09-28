@@ -1,5 +1,6 @@
 import type {
   Category,
+  IdeaImagePayload,
   ItemDetail,
   ItemSummary,
   Leaderboard,
@@ -9,7 +10,13 @@ import type {
   SubmissionResult,
 } from "@/lib/types";
 
-const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://recycler-api.fly.dev").replace(/\/$/, "");
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://recycler-api.fly.dev").replace(/\/$/, "");
+
+export function absoluteApiUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -78,5 +85,6 @@ export const api = {
     materials: string;
     steps: string;
     disposalNote?: string;
+    image?: IdeaImagePayload;
   }) => request<SubmissionResult>("/submissions", { method: "POST", body: JSON.stringify(body) }),
 };

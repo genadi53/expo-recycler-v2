@@ -1,5 +1,8 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { createApp } from "./app.js";
-import { openDatabase } from "./db.js";
+import { ensureImagesDir, openDatabase } from "./db.js";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -13,8 +16,13 @@ async function json<T>(res: Response): Promise<T> {
   return body;
 }
 
+const imagesDir = ensureImagesDir(fs.mkdtempSync(path.join(os.tmpdir(), "recycler-images-")));
 const db = openDatabase(":memory:");
-const app = createApp(db);
+const app = createApp(db, imagesDir);
+
+// 1x1 PNG
+const TINY_PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
 const categories = await json<{ categories: { id: string; itemCount: number }[] }>(await app.request("/categories"));
 assert(categories.categories.length === 6, "expected 6 categories");
@@ -148,7 +156,12 @@ assert(afterLogs.counts.disposals === 2, "expected 2 disposals");
 assert(afterLogs.badges.find((badge) => badge.slug === "maker")?.unlockedAt, "maker badge missing");
 assert(afterLogs.badges.find((badge) => badge.slug === "curious")?.unlockedAt, "curious badge missing");
 
-const attached = await json<{ item: { id: string; created: boolean }; pointsAwarded: number; badgesUnlocked: { slug: string }[] }>(
+const attached = await json<{
+  item: { id: string; created: boolean };
+  idea: { id: string; imageUrl: string | null };
+  pointsAwarded: number;
+  badgesUnlocked: { slug: string }[];
+}>(
   await app.request("/submissions", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -160,12 +173,29 @@ const attached = await json<{ item: { id: string; created: boolean }; pointsAwar
       title: "Peel vinegar",
       materials: "Banana peels\nVinegar",
       steps: "Cover peels with vinegar.\nWait two weeks.\nStrain.",
+      image: { mime: "image/png", data: TINY_PNG_BASE64 },
     }),
   }),
 );
 assert(!attached.item.created && attached.item.id === "banana-peels", "existing item should be matched case-insensitively");
 assert(attached.pointsAwarded === 15, "existing idea should be 15 points");
 assert(attached.badgesUnlocked.some((badge) => badge.slug === "contributor"), "contributor badge missing");
+assert(attached.idea.imageUrl?.startsWith("/idea-images/") && attached.idea.imageUrl.endsWith(".png"), "idea imageUrl missing");
+
+const withPicture = await json<{ ideas: { title: string; imageUrl: string | null }[] }>(
+  await app.request("/items/banana-peels"),
+);
+const pictured = withPicture.ideas.find((idea) => idea.title === "Peel vinegar");
+assert(pictured?.imageUrl === attached.idea.imageUrl, "item detail should include idea imageUrl");
+
+const imageRes = await app.request(attached.idea.imageUrl!);
+assert(imageRes.status === 200, "idea image should be served");
+assert(imageRes.headers.get("content-type") === "image/png", "idea image content-type should be png");
+const imageBytes = Buffer.from(await imageRes.arrayBuffer());
+assert(imageBytes.length > 0, "idea image body should not be empty");
+
+const traversal = await app.request("/idea-images/../package.json");
+assert(traversal.status === 404, "image route should reject path traversal");
 
 const fresh = await json<{ item: { id: string; created: boolean; name: string }; pointsAwarded: number }>(
   await app.request("/submissions", {
