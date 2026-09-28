@@ -24,7 +24,11 @@ export default function ResultsScreen() {
               : "The catalog is empty."
           }
           actionLabel={q ? `Add “${q.length > 28 ? `${q.slice(0, 28)}…` : q}”` : "Submit an item"}
-          onAction={() => router.push((q ? `/submit?item=${encodeURIComponent(q)}` : "/submit") as Href)}
+          onAction={() =>
+            router.push(
+              (q ? `/submit?mode=item&item=${encodeURIComponent(q)}` : "/submit?mode=item") as Href,
+            )
+          }
           icon="search-outline"
         />
       ) : null}
