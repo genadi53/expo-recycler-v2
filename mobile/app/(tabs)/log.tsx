@@ -72,7 +72,7 @@ export default function LogScreen() {
           title="Nothing logged yet"
           body="Search for something you have, then record a reuse or a disposal. Ideas you share are counted above."
           actionLabel="Find an item"
-          onAction={() => router.push("/" as Href)}
+          onAction={() => router.push("/browse" as Href)}
         />
       ) : (
         snapshot.recent.map((entry) => <LogRow key={entry.id} entry={entry} />)

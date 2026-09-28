@@ -1,5 +1,7 @@
 import type {
   Category,
+  IdeaImagePayload,
+  IdeaSummary,
   ItemDetail,
   ItemSummary,
   Leaderboard,
@@ -9,7 +11,13 @@ import type {
   SubmissionResult,
 } from "@/lib/types";
 
-const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://recycler-api.fly.dev").replace(/\/$/, "");
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://recycler-api.fly.dev").replace(/\/$/, "");
+
+export function absoluteApiUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -59,6 +67,13 @@ export const api = {
     return request<{ items: ItemSummary[] }>(`/items${query ? `?${query}` : ""}`);
   },
   item: (id: string) => request<ItemDetail>(`/items/${encodeURIComponent(id)}`),
+  ideas: (params: { kind?: string; limit?: number } = {}) => {
+    const search = new URLSearchParams();
+    if (params.kind) search.set("kind", params.kind);
+    if (params.limit) search.set("limit", String(params.limit));
+    const query = search.toString();
+    return request<{ ideas: IdeaSummary[] }>(`/ideas${query ? `?${query}` : ""}`);
+  },
   saveProfile: (id: string, displayName: string) =>
     request<SavedProfile>(`/profiles/${encodeURIComponent(id)}`, {
       method: "PUT",
@@ -78,5 +93,6 @@ export const api = {
     materials: string;
     steps: string;
     disposalNote?: string;
+    image?: IdeaImagePayload;
   }) => request<SubmissionResult>("/submissions", { method: "POST", body: JSON.stringify(body) }),
 };

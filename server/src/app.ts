@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
@@ -13,6 +15,16 @@ import {
   disposalPoints,
   type DisposalMethod,
 } from "./rules.js";
+
+const IMAGE_MIME = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+} as const;
+
+type ImageMime = keyof typeof IMAGE_MIME;
+
+const MAX_IMAGE_BYTES = Math.floor(1.5 * 1024 * 1024);
 
 export class HttpError extends Error {
   constructor(
@@ -37,6 +49,12 @@ const submissionSchema = z.object({
     z.array(z.string()).min(1, "Steps are required."),
   ]),
   disposalNote: z.string().optional(),
+  image: z
+    .object({
+      mime: z.enum(["image/jpeg", "image/png", "image/webp"], { error: "Picture must be a JPEG, PNG, or WebP." }),
+      data: z.string().min(1, "Picture data is required."),
+    })
+    .optional(),
 });
 
 const logSchema = z
@@ -97,10 +115,38 @@ type IdeaRow = {
   title: string;
   materials: string;
   steps: string;
+  image_filename: string | null;
   author_profile_id: string | null;
   status: string;
   author_name: string | null;
 };
+
+function decodeIdeaImage(image: { mime: ImageMime; data: string }): { buffer: Buffer; ext: string; mime: ImageMime } {
+  const cleaned = image.data.replace(/^data:[^;]+;base64,/, "").replace(/\s+/g, "");
+  if (!cleaned) throw new HttpError(400, "Picture data is required.");
+  let buffer: Buffer;
+  try {
+    buffer = Buffer.from(cleaned, "base64");
+  } catch {
+    throw new HttpError(400, "Picture data is invalid.");
+  }
+  if (buffer.length === 0) throw new HttpError(400, "Picture data is required.");
+  if (buffer.length > MAX_IMAGE_BYTES) throw new HttpError(400, "Picture is too large. Keep it under 1.5 MB.");
+  return { buffer, ext: IMAGE_MIME[image.mime], mime: image.mime };
+}
+
+function ideaImageUrl(filename: string | null | undefined): string | null {
+  if (!filename) return null;
+  return `/idea-images/${filename}`;
+}
+
+function contentTypeForFilename(filename: string): string | null {
+  const ext = path.extname(filename).toLowerCase();
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".png") return "image/png";
+  if (ext === ".webp") return "image/webp";
+  return null;
+}
 
 type DisposalRow = {
   method: string;
@@ -188,6 +234,36 @@ function profilePayload(db: DB, profileId: string) {
     )
     .all(profileId);
 
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 366);
+  const sinceIso = since.toISOString();
+
+  const activity = (
+    db
+      .prepare(
+        `SELECT substr(created_at, 1, 10) AS date, COUNT(*) AS count
+         FROM log_entries
+         WHERE profile_id = ? AND created_at >= ?
+         GROUP BY substr(created_at, 1, 10)
+         ORDER BY date`,
+      )
+      .all(profileId, sinceIso) as { date: string; count: number }[]
+  ).map((row) => ({ date: row.date, count: Number(row.count) }));
+
+  const byCategory = (
+    db
+      .prepare(
+        `SELECT c.id, c.name, COUNT(*) AS count
+         FROM log_entries l
+         JOIN items i ON i.id = l.item_id
+         JOIN categories c ON c.id = i.category_id
+         WHERE l.profile_id = ?
+         GROUP BY c.id, c.name
+         ORDER BY count DESC, c.name ASC`,
+      )
+      .all(profileId) as { id: string; name: string; count: number }[]
+  ).map((row) => ({ id: row.id, name: row.name, count: Number(row.count) }));
+
   return {
     id: profile.id,
     displayName: profile.display_name,
@@ -198,6 +274,8 @@ function profilePayload(db: DB, profileId: string) {
       ideasShared: stats.ideas,
       logs: stats.logs,
     },
+    activity,
+    byCategory,
     badges,
     recent,
   };
@@ -210,7 +288,7 @@ function readDisplayName(body: unknown): string {
   return parsed.data;
 }
 
-export function createApp(db: DB) {
+export function createApp(db: DB, imagesDir: string) {
   const app = new Hono();
   app.use("*", cors());
   app.use("*", async (c, next) => {
@@ -226,6 +304,27 @@ export function createApp(db: DB) {
   });
 
   app.notFound((c) => c.json({ error: "Not found." }, 404));
+
+  app.get("/idea-images/:file", (c) => {
+    const raw = c.req.param("file");
+    const file = path.basename(raw);
+    if (!file || file !== raw || file.includes("..")) throw new HttpError(404, "Not found.");
+    const contentType = contentTypeForFilename(file);
+    if (!contentType) throw new HttpError(404, "Not found.");
+    const fullPath = path.join(imagesDir, file);
+    if (!fullPath.startsWith(path.resolve(imagesDir) + path.sep) && fullPath !== path.resolve(imagesDir)) {
+      throw new HttpError(404, "Not found.");
+    }
+    if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) throw new HttpError(404, "Not found.");
+    const body = fs.readFileSync(fullPath);
+    return new Response(body, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  });
 
   app.get("/categories", (c) => {
     const categories = db
@@ -264,6 +363,56 @@ export function createApp(db: DB) {
     return c.json({ items });
   });
 
+  app.get("/ideas", (c) => {
+    const kind = (c.req.query("kind") ?? "").trim();
+    const limitRaw = Number(c.req.query("limit") ?? "0");
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 100) : 0;
+    if (kind && !(IDEA_KINDS as readonly string[]).includes(kind)) {
+      throw new HttpError(400, "Pick a kind: cook, beauty, art, or useful.");
+    }
+    const params: string[] = [];
+    let sql = `
+      SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.image_filename,
+             ideas.created_at, i.id AS itemId, i.name AS itemName, c.name AS categoryName,
+             profiles.display_name AS authorName
+      FROM ideas
+      JOIN items i ON i.id = ideas.item_id AND i.status = 'published'
+      JOIN categories c ON c.id = i.category_id
+      LEFT JOIN profiles ON profiles.id = ideas.author_profile_id
+      WHERE ideas.status = 'published'
+    `;
+    if (kind) {
+      sql += " AND ideas.kind = ?";
+      params.push(kind);
+    }
+    sql += " ORDER BY ideas.created_at DESC, ideas.rowid DESC";
+    if (limit) sql += ` LIMIT ${limit}`;
+    const ideas = (
+      db.prepare(sql).all(...params) as {
+        id: string;
+        kind: string;
+        title: string;
+        materials: string;
+        image_filename: string | null;
+        itemId: string;
+        itemName: string;
+        categoryName: string;
+        authorName: string | null;
+      }[]
+    ).map((idea) => ({
+      id: idea.id,
+      kind: idea.kind,
+      title: idea.title,
+      materials: idea.materials,
+      itemId: idea.itemId,
+      itemName: idea.itemName,
+      categoryName: idea.categoryName,
+      authorName: idea.authorName,
+      imageUrl: ideaImageUrl(idea.image_filename),
+    }));
+    return c.json({ ideas });
+  });
+
   app.get("/items/:id", (c) => {
     const item = db.prepare("SELECT * FROM items WHERE id = ? AND status = 'published'").get(c.req.param("id")) as
       | ItemRow
@@ -288,6 +437,7 @@ export function createApp(db: DB) {
       title: idea.title,
       materials: idea.materials,
       steps: parseStringArray(idea.steps),
+      imageUrl: ideaImageUrl(idea.image_filename),
       authorName: idea.author_name,
     }));
     const disposal = loadDisposal(db, item);
@@ -407,6 +557,7 @@ export function createApp(db: DB) {
     const body = parsed.data;
     const steps = normalizeSteps(body.steps);
     const disposalNote = body.disposalNote?.trim() ?? "";
+    const decodedImage = body.image ? decodeIdeaImage(body.image) : null;
 
     const result = withTransaction(db, () => {
       requireProfile(db, body.profileId);
@@ -451,10 +602,25 @@ export function createApp(db: DB) {
       }
 
       const ideaId = crypto.randomUUID();
+      const imageFilename = decodedImage ? `${ideaId}.${decodedImage.ext}` : null;
       db.prepare(
-        `INSERT INTO ideas (id, item_id, kind, title, materials, steps, author_profile_id, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'published', ?)`,
-      ).run(ideaId, itemId, body.ideaKind, body.title, body.materials, JSON.stringify(steps), body.profileId, nowIso());
+        `INSERT INTO ideas (id, item_id, kind, title, materials, steps, image_filename, author_profile_id, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)`,
+      ).run(
+        ideaId,
+        itemId,
+        body.ideaKind,
+        body.title,
+        body.materials,
+        JSON.stringify(steps),
+        imageFilename,
+        body.profileId,
+        nowIso(),
+      );
+
+      if (decodedImage && imageFilename) {
+        fs.writeFileSync(path.join(imagesDir, imageFilename), decodedImage.buffer);
+      }
 
       const total = addPoints(db, body.profileId, points);
       const badgesUnlocked = awardBadges(db, body.profileId);
@@ -473,7 +639,7 @@ export function createApp(db: DB) {
           categoryName: itemCategory.name,
           created: createdItem,
         },
-        idea: { id: ideaId, title: body.title },
+        idea: { id: ideaId, title: body.title, imageUrl: ideaImageUrl(imageFilename) },
         pointsAwarded: points,
         points: total,
         badgesUnlocked,

@@ -1,12 +1,12 @@
 import { LogAction } from "@/components/log-action";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { ErrorState, LoadingState, Screen } from "@/components/ui";
-import { api } from "@/lib/api";
+import { absoluteApiUrl, api } from "@/lib/api";
 import { KIND_LABEL } from "@/lib/format";
 import type { Idea } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 export default function ItemScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -73,8 +73,12 @@ export default function ItemScreen() {
 
 function IdeaCard({ idea }: { idea: Idea }) {
   const materials = idea.materials.split("\n").map((line) => line.trim()).filter(Boolean);
+  const imageUri = absoluteApiUrl(idea.imageUrl);
   return (
     <View style={styles.card}>
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.ideaImage} accessibilityLabel={`${idea.title} picture`} />
+      ) : null}
       <Text style={styles.kind}>{KIND_LABEL[idea.kind]}</Text>
       <Text style={styles.cardTitle}>{idea.title}</Text>
       {idea.authorName ? <Text style={styles.meta}>Shared by {idea.authorName}</Text> : null}
@@ -110,6 +114,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     gap: 6,
+    overflow: "hidden",
+  },
+  ideaImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: 12,
+    marginBottom: 4,
+    backgroundColor: colors.line,
   },
   kind: { color: colors.green, fontSize: 12, fontWeight: "800", letterSpacing: 0.5, textTransform: "uppercase" },
   cardTitle: { fontSize: 18, fontWeight: "700", color: colors.ink },
