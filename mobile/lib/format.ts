@@ -39,6 +39,16 @@ export function formatWhen(iso: string): string {
   });
 }
 
+export function formatUnlocked(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Unlocked";
+  return `Unlocked ${date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
+
 export function formatMemberSince(iso?: string): string {
   const date = iso ? new Date(iso) : new Date();
   if (Number.isNaN(date.getTime())) {

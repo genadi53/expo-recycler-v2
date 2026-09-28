@@ -35,10 +35,9 @@ export default function RootLayout() {
                   options={{ gestureEnabled: false, animation: "fade" }}
                 />
                 <Stack.Screen name="results" />
-                <Stack.Screen name="scan" />
-                <Stack.Screen name="photos" />
                 <Stack.Screen name="category/[id]" />
                 <Stack.Screen name="item/[id]" />
+                <Stack.Screen name="badges" />
               </Stack>
             </View>
           </View>

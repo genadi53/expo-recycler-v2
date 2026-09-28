@@ -10,19 +10,14 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 const KINDS = ["cook", "beauty", "art", "useful"] as const;
-type IdeaKind = (typeof KINDS)[number];
-
-function isIdeaKind(value: string): value is IdeaKind {
-  return (KINDS as readonly string[]).includes(value);
-}
 
 export default function SubmitScreen() {
-  const params = useLocalSearchParams<{ item?: string; category?: string; kind?: string }>();
+  const params = useLocalSearchParams<{ item?: string; category?: string }>();
   const { profile, refresh } = useProfile();
   const { status, data, error, retry } = useQuery("submit-categories", () => api.categories());
   const [categoryId, setCategoryId] = useState("");
   const [itemName, setItemName] = useState("");
-  const [kind, setKind] = useState<IdeaKind>("cook");
+  const [kind, setKind] = useState<(typeof KINDS)[number]>("cook");
   const [title, setTitle] = useState("");
   const [materials, setMaterials] = useState("");
   const [steps, setSteps] = useState("");
@@ -42,11 +37,6 @@ export default function SubmitScreen() {
     const category = typeof params.category === "string" ? params.category : "";
     if (category) setCategoryId(category);
   }, [params.category]);
-
-  useEffect(() => {
-    const next = typeof params.kind === "string" ? params.kind : "";
-    if (isIdeaKind(next)) setKind(next);
-  }, [params.kind]);
 
   useEffect(() => {
     const trimmed = itemName.trim();

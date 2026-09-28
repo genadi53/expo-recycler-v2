@@ -26,21 +26,37 @@ npm install
 npm run web
 ```
 
-Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The first launch shows a four-screen tour, then asks for a display name once. After that the app opens on Home. The app calls the API at `http://127.0.0.1:47821`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
+Open [http://127.0.0.1:47822](http://127.0.0.1:47822). The first launch shows a four-screen tour, then asks for a display name once. After that the app opens on Dashboard. The app calls the API at `https://recycler-api.fly.dev`. Override that with `EXPO_PUBLIC_API_URL` if the API is elsewhere.
+
+After clone, run `git config core.hooksPath .githooks` so a push deploys `server/` to the Fly app `recycler-api`.
 
 On a wide browser window the app stays in a centered column so it still reads as a phone. The same Expo project can run on iOS and Android with `npm start` inside `mobile/`.
+
+## What each screen does
+
+- **Onboarding** — first-launch tour only (look up, reuse, log, keep going). Not a home.
+- **Display name** — pick the name used on this phone. After that, Account is the only place to change it.
+- **Dashboard** — find something: search and category cards. Not stats, not badges. (The Settings row named Dashboard stays a later placeholder.)
+- **Results** — pick a match, or offer “add this” when nothing fits.
+- **Category** — browse items for one material.
+- **Item** — decide: reuse idea vs disposal path, then log what you did.
+- **Log** — your history on this phone: points, reuses / disposals / ideas shared, and the recent list. A Badges card here opens the gallery. The display name is not edited here.
+- **Badges** — the collection: all six achievements with pictures, locked or unlocked. Opened from Log, not from a tab.
+- **Leaderboard** — friendly rank by points. Not your personal gallery.
+- **Submit** — publish an item or idea as the saved display name.
+- **Settings / Account** — prefs and the display name. Badges are not a setting.
+
+Tabs: Dashboard, Log, Submit (the round button), Leaderboard, and Settings.
 
 ## What you can do
 
 - First-time onboarding: look up an item, reuse or dispose, log it on this phone, then keep the habit.
-- Tabs: Dashboard, Log, the round plus button, Leaderboard, and Settings.
-- The plus button opens Shortcuts: Recycle, Recipe, Scan, Search, plus list rows to add an idea, log a reuse, start a beauty use, or open Photos. Scan and Photos are placeholders. Recipe and Beauty open Submit with that idea kind already selected. Recycle opens the catalog so you can pick an item and log a disposal.
 - Search, or browse Food, Plastic, Metal, Glass, Paper, and Other.
 - On an item, read reuse ideas and a short “rather just get rid of it” path.
 - Log “I reused this” or “I disposed of this.” Each record is its own event.
-- Open a personal log of points, badges, and recent actions. Change the display name there if you want.
+- Open Log for points and recent actions. Tap **Badges** there to see the illustrated collection.
 - Settings is a grouped list. Account is where you set or change the display name. The other rows open placeholder screens that say they are under construction.
-- Open the leaderboard. It is friendly competition, not a verified ranking.
-- Submit an item or an idea from Shortcuts. A matching name gets the idea; a new name becomes an item.
+- Open the leaderboard. Neighborhood, City, and World are placeholder divisions; rankings stay by points. It is friendly competition, not a verified ranking.
+- Submit an item or an idea. A matching name gets the idea; a new name becomes an item.
 
 Points: reuse 10, responsible disposal 5, trash 2, idea on an existing item 15, new item 25.

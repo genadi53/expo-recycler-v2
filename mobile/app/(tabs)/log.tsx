@@ -1,10 +1,14 @@
+import { BadgeArt } from "@/components/badge-art";
 import { useProfile } from "@/components/profile";
 import { colors, serif } from "@/components/theme";
 import { EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { formatWhen, METHOD_LABEL } from "@/lib/format";
 import type { Badge, LogEntry } from "@/lib/types";
+import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+
+const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
 export default function LogScreen() {
   const { ready, profile, snapshot, error, refresh } = useProfile();
@@ -22,20 +26,11 @@ export default function LogScreen() {
       <Screen title="Your log">
         <EmptyState
           title="Pick a display name"
-          body="The log, points, and badges stay with this name on this phone. Set it in Account under Settings. There is no sign-in, and a new phone starts fresh."
+          body="The log and points stay with this name on this phone. Set it in Account under Settings. There is no sign-in, and a new phone starts fresh."
           icon="person-outline"
           actionLabel="Open Account"
           onAction={() => router.push("/settings/account" as Href)}
         />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Choose a display name"
-          onPress={() => router.push("/display-name" as Href)}
-          hitSlop={8}
-          testID="choose-name"
-        >
-          <Text style={styles.change}>Choose a name</Text>
-        </Pressable>
       </Screen>
     );
   }
@@ -59,15 +54,6 @@ export default function LogScreen() {
   return (
     <Screen title="Your log">
       <Text style={styles.hello}>{snapshot.displayName}</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Change display name"
-        onPress={() => router.push("/display-name" as Href)}
-        hitSlop={8}
-        testID="change-name"
-      >
-        <Text style={styles.change}>Change name</Text>
-      </Pressable>
       <Text style={styles.points}>{snapshot.points}</Text>
       <Text style={styles.pointsLabel}>points on this phone</Text>
       <Text style={styles.note}>Counts only. No carbon estimate, and no weight saved.</Text>
@@ -78,12 +64,7 @@ export default function LogScreen() {
         <Count label="Ideas shared" value={snapshot.counts.ideasShared} />
       </View>
 
-      <Text style={styles.section}>Badges</Text>
-      <View style={styles.badges}>
-        {snapshot.badges.map((badge) => (
-          <BadgeCard key={badge.slug} badge={badge} />
-        ))}
-      </View>
+      <BadgesDoor badges={snapshot.badges} />
 
       <Text style={styles.section}>Recent</Text>
       {snapshot.recent.length === 0 ? (
@@ -100,22 +81,39 @@ export default function LogScreen() {
   );
 }
 
+function BadgesDoor({ badges }: { badges: Badge[] }) {
+  const unlocked = badges.filter((badge) => badge.unlockedAt).length;
+  const thumbs = badges.slice(0, 3);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Badges, ${unlocked} of ${badges.length} unlocked`}
+      onPress={() => router.push("/badges" as Href)}
+      testID="open-badges"
+      style={({ pressed }) => [styles.door, pressed && styles.pressed, pointer]}
+    >
+      <View style={styles.thumbs}>
+        {thumbs.map((badge) => (
+          <BadgeArt key={badge.slug} slug={badge.slug} unlocked={Boolean(badge.unlockedAt)} size={44} />
+        ))}
+      </View>
+      <View style={styles.doorCopy}>
+        <Text style={styles.doorTitle}>Badges</Text>
+        <Text style={styles.doorMeta}>
+          {unlocked} of {badges.length} unlocked
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+    </Pressable>
+  );
+}
+
 function Count({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.count}>
       <Text style={styles.countValue}>{value}</Text>
       <Text style={styles.countLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function BadgeCard({ badge }: { badge: Badge }) {
-  const unlocked = Boolean(badge.unlockedAt);
-  return (
-    <View style={[styles.badge, !unlocked && styles.badgeLocked]}>
-      <Text style={styles.badgeTitle}>{badge.title}</Text>
-      <Text style={styles.badgeRule}>{badge.rule}</Text>
-      <Text style={styles.badgeState}>{unlocked ? "Unlocked" : "Locked"}</Text>
     </View>
   );
 }
@@ -145,7 +143,6 @@ function LogRow({ entry }: { entry: LogEntry }) {
 
 const styles = StyleSheet.create({
   hello: { color: colors.muted, fontSize: 14, fontWeight: "700" },
-  change: { color: colors.green, fontSize: 14, fontWeight: "700" },
   points: { fontFamily: serif, fontSize: 64, color: colors.ink, lineHeight: 68 },
   pointsLabel: { color: colors.muted, marginTop: -4 },
   note: { color: colors.muted, fontSize: 13, lineHeight: 18 },
@@ -161,18 +158,22 @@ const styles = StyleSheet.create({
   },
   countValue: { fontFamily: serif, fontSize: 28, color: colors.ink },
   countLabel: { color: colors.muted, fontSize: 12 },
-  section: { fontFamily: serif, fontSize: 26, color: colors.ink },
-  badges: { gap: 8 },
-  badge: {
-    backgroundColor: colors.greenSoft,
-    borderRadius: 14,
+  door: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 16,
     padding: 12,
-    gap: 2,
   },
-  badgeLocked: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, opacity: 0.85 },
-  badgeTitle: { fontWeight: "800", color: colors.ink },
-  badgeRule: { color: colors.muted, fontSize: 13 },
-  badgeState: { color: colors.green, fontSize: 12, fontWeight: "700", marginTop: 4 },
+  thumbs: { flexDirection: "row", gap: 6 },
+  doorCopy: { flex: 1, gap: 2 },
+  doorTitle: { fontWeight: "800", color: colors.ink, fontSize: 16 },
+  doorMeta: { color: colors.muted, fontSize: 13 },
+  pressed: { opacity: 0.82 },
+  section: { fontFamily: serif, fontSize: 26, color: colors.ink },
   row: {
     flexDirection: "row",
     gap: 12,
