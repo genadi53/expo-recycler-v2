@@ -6,8 +6,29 @@ import { Button, EmptyState, ErrorState, LoadingState, Screen } from "@/componen
 import { api } from "@/lib/api";
 import type { CategoryCount, ProfileSnapshot } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
-import { router, type Href } from "expo-router";
+import { useFocusEffect, router, type Href } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
+
+const GREETINGS = [
+  "Hey",
+  "Welcome back",
+  "Good to see you",
+  "Nice to have you here",
+  "Ready when you are",
+  "Let's keep going",
+  "What are we sorting today",
+  "Another small win awaits",
+];
+
+function pickGreeting(previous?: string) {
+  if (GREETINGS.length <= 1) return GREETINGS[0] ?? "";
+  let next = GREETINGS[Math.floor(Math.random() * GREETINGS.length)]!;
+  while (previous && next === previous) {
+    next = GREETINGS[Math.floor(Math.random() * GREETINGS.length)]!;
+  }
+  return next;
+}
 
 export default function DashboardScreen() {
   const { ready, profile, snapshot, error, refresh } = useProfile();
@@ -100,12 +121,24 @@ function DashboardHeader() {
 }
 
 function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
+  const [greeting, setGreeting] = useState(() => pickGreeting());
+  const firstFocus = useRef(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      setGreeting((previous) => pickGreeting(previous));
+    }, []),
+  );
+
   return (
     <View style={styles.summary} testID="dashboard-summary">
       <View>
+        <Text style={styles.greeting}>{greeting}</Text>
         <Text style={styles.hello}>{snapshot.displayName}</Text>
-        <Text style={styles.points}>{snapshot.points}</Text>
-        <Text style={styles.pointsLabel}>points on this phone</Text>
       </View>
       <View style={styles.counts}>
         <Count label="Reuses" value={snapshot.counts.reuses} />
@@ -208,9 +241,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   summary: { gap: 12 },
-  hello: { color: colors.muted, fontSize: 14, fontWeight: "700" },
-  points: { fontFamily: serif, fontSize: 48, color: colors.ink, lineHeight: 52 },
-  pointsLabel: { color: colors.muted, marginTop: -2 },
+  greeting: { color: colors.muted, fontSize: 15, fontWeight: "600" },
+  hello: { fontFamily: serif, fontSize: 34, color: colors.ink, lineHeight: 38, marginTop: 2 },
   counts: { flexDirection: "row", gap: 8 },
   count: {
     flex: 1,
