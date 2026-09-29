@@ -8,7 +8,10 @@ import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
+type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0] & {
+  onOpenCreate: () => void;
+  createOpen: boolean;
+};
 
 const TAB_META = {
   index: { labelKey: "tabs.dashboard", icon: "grid-outline" as const, iconOn: "grid" as const },
@@ -17,12 +20,7 @@ const TAB_META = {
   settings: { labelKey: "tabs.settings", icon: "settings-outline" as const, iconOn: "settings" as const },
 };
 
-function RecyclerTabBar({
-  state,
-  navigation,
-  onOpenSheet,
-  sheetOpen,
-}: TabBarProps & { onOpenSheet: () => void; sheetOpen: boolean }) {
+function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
@@ -52,8 +50,8 @@ function RecyclerTabBar({
               key={route.key}
               accessibilityRole="button"
               accessibilityLabel={t("tabs.shortcuts")}
-              accessibilityState={{ selected: sheetOpen }}
-              onPress={onOpenSheet}
+              accessibilityState={{ selected: createOpen }}
+              onPress={onOpenCreate}
               style={styles.slot}
               testID="tab-submit"
             >
@@ -92,30 +90,45 @@ function RecyclerTabBar({
 }
 
 export default function TabLayout() {
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const { t } = useTranslation();
 
   return (
-    <View style={styles.frame}>
+    <View style={styles.root}>
       <Tabs
         tabBar={(props) => (
-          <RecyclerTabBar {...props} onOpenSheet={() => setSheetOpen(true)} sheetOpen={sheetOpen} />
+          <RecyclerTabBar
+            {...props}
+            onOpenCreate={() => setCreateOpen(true)}
+            createOpen={createOpen}
+          />
         )}
         screenOptions={{ headerShown: false, tabBarShowLabel: false }}
       >
         <Tabs.Screen name="index" options={{ title: t("tabs.dashboard") }} />
         <Tabs.Screen name="log" options={{ title: t("tabs.log") }} />
-        <Tabs.Screen name="submit" options={{ title: t("tabs.submit") }} />
+        <Tabs.Screen
+          name="submit"
+          options={{ title: t("tabs.submit") }}
+          listeners={{
+            tabPress: (event) => {
+              event.preventDefault();
+              setCreateOpen(true);
+            },
+          }}
+        />
         <Tabs.Screen name="leaderboard" options={{ title: t("tabs.leaderboard") }} />
         <Tabs.Screen name="settings" options={{ title: t("tabs.settings") }} />
       </Tabs>
-      <CreateSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <CreateSheet visible={createOpen} onClose={() => setCreateOpen(false)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  frame: { flex: 1 },
+  root: {
+    flex: 1,
+  },
   bar: {
     flexDirection: "row",
     alignItems: "flex-end",

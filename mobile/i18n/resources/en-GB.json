@@ -339,10 +339,10 @@
     "getStarted": "Get started",
     "lookUpTitle": "Look up what you have",
     "lookUpBody": "Search the catalog or pick a material. Recycler shows whether it can be reused, and a plain way to get rid of it if not.",
-    "reuseFirstTitle": "Reuse first, then let it go",
+    "reuseFirstTitle": "Reuse before disposal",
     "reuseFirstBody": "Follow a cook, beauty, art, or useful idea. Disposal steps sit on the same page. Trash is the last stop, not the first.",
     "logActionsTitle": "Log it on this phone",
-    "logActionsBody": "Record each reuse or disposal. No account and no password. You’ll pick a display name next, and Recycler will keep it on this phone.",
+    "logActionsBody": "Record each reuse or disposal. No account and no password.",
     "keepGoingTitle": "Make it a habit",
     "keepGoingBody": "Points and badges come from real actions, not carbon math. Recycler counts reuses, disposals, and ideas you share."
   },
