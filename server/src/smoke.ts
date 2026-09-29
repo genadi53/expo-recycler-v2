@@ -230,6 +230,22 @@ const itemOnlyDup = await app.request("/submissions", {
 });
 assert(itemOnlyDup.status === 400, "item-only submit should reject an existing name");
 
+const blankIdeaFields = await app.request("/submissions", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    profileId: "person-1",
+    category: "other",
+    itemName: "Blank Idea Fields Cork",
+    title: "",
+    materials: "",
+    steps: "",
+  }),
+});
+assert(blankIdeaFields.status === 201, "blank idea fields should count as item-only, not require a kind");
+const blankIdeaBody = await json<{ idea: unknown }>(blankIdeaFields);
+assert(blankIdeaBody.idea == null, "blank idea fields should not create an idea");
+
 const fresh = await json<{
   item: { id: string; created: boolean; name: string; imageUrl: string | null };
   idea: { id: string; title: string } | null;

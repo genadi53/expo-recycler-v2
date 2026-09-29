@@ -58,11 +58,7 @@ const submissionSchema = z
     itemImage: imagePayloadSchema.optional(),
   })
   .superRefine((value, ctx) => {
-    const hasIdea =
-      value.ideaKind != null ||
-      (value.title != null && value.title.length > 0) ||
-      (value.materials != null && value.materials.length > 0) ||
-      value.steps != null;
+    const hasIdea = submissionHasIdea(value);
     if (!hasIdea) return;
     if (!value.ideaKind) {
       ctx.addIssue({ code: "custom", message: "Pick a kind: cook, beauty, art, or useful.", path: ["ideaKind"] });
@@ -73,7 +69,7 @@ const submissionSchema = z
     if (!value.materials?.trim()) {
       ctx.addIssue({ code: "custom", message: "Materials are required.", path: ["materials"] });
     }
-    if (value.steps == null) {
+    if (!stepsProvided(value.steps)) {
       ctx.addIssue({ code: "custom", message: "Steps are required.", path: ["steps"] });
     }
   });
@@ -98,6 +94,28 @@ const logSchema = z
 function zodMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Check the form and try again.";
 }
+
+function stepsProvided(steps: string | string[] | undefined): boolean {
+  if (steps == null) return false;
+  if (Array.isArray(steps)) return steps.some((step) => step.trim().length > 0);
+  return steps.trim().length > 0;
+}
+
+/** Idea fields are recipe-only. Blank strings from older clients count as absent. */
+function submissionHasIdea(value: {
+  ideaKind?: string;
+  title?: string;
+  materials?: string;
+  steps?: string | string[];
+}): boolean {
+  return (
+    value.ideaKind != null ||
+    (value.title != null && value.title.length > 0) ||
+    (value.materials != null && value.materials.length > 0) ||
+    stepsProvided(value.steps)
+  );
+}
+
 
 async function readJson(c: { req: { json: () => Promise<unknown> } }): Promise<unknown> {
   try {
@@ -601,13 +619,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
     const parsed = submissionSchema.safeParse(await readJson(c));
     if (!parsed.success) throw new HttpError(400, zodMessage(parsed.error));
     const body = parsed.data;
-    const withIdea =
-      body.ideaKind != null &&
-      body.title != null &&
-      body.title.trim().length > 0 &&
-      body.materials != null &&
-      body.materials.trim().length > 0 &&
-      body.steps != null;
+    const withIdea = submissionHasIdea(body);
     const steps = withIdea ? normalizeSteps(body.steps!) : null;
     const disposalNote = body.disposalNote?.trim() ?? "";
     const decodedImage = body.image ? decodeIdeaImage(body.image) : null;
