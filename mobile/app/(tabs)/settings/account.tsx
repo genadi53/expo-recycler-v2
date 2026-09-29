@@ -2,9 +2,11 @@ import { useProfile } from "@/components/profile";
 import { colors, serif } from "@/components/theme";
 import { Banner, Button, ErrorState, Field, Input, LoadingState, Screen } from "@/components/ui";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text } from "react-native";
 
 export default function AccountScreen() {
+  const { t } = useTranslation();
   const { ready, profile, snapshot, error, refresh, saveName } = useProfile();
   const [name, setName] = useState("");
   const [seeded, setSeeded] = useState(false);
@@ -23,7 +25,7 @@ export default function AccountScreen() {
     setFormError("");
     setSaved(false);
     if (!name.trim()) {
-      setFormError("Display name is required.");
+      setFormError(t("account.required"));
       return;
     }
     setSaving(true);
@@ -31,7 +33,7 @@ export default function AccountScreen() {
       await saveName(name);
       setSaved(true);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save that name.");
+      setFormError(err instanceof Error ? err.message : t("account.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -39,36 +41,38 @@ export default function AccountScreen() {
 
   if (!ready) {
     return (
-      <Screen title="Account" back>
-        <LoadingState label="Loading account…" />
+      <Screen title={t("account.title")} back>
+        <LoadingState label={t("account.loading")} />
       </Screen>
     );
   }
 
   return (
-    <Screen title="Account" back>
-      <Text style={styles.headline}>Display name</Text>
-      <Text style={styles.body}>
-        There is no sign-in. The name lives on this phone, shows on the leaderboard, and starts over on a new phone.
-      </Text>
+    <Screen title={t("account.title")} back>
+      <Text style={styles.headline}>{t("account.headline")}</Text>
+      <Text style={styles.body}>{t("account.body")}</Text>
       {error && profile && !snapshot ? <ErrorState message={error} onRetry={() => refresh().catch(() => {})} /> : null}
-      {saved ? <Banner tone="good" title="Name saved" body="The leaderboard will use this display name." /> : null}
-      <Field label="Display name" error={formError}>
+      {saved ? <Banner tone="good" title={t("account.nameSaved")} body={t("account.nameSavedBody")} /> : null}
+      <Field label={t("account.displayName")} error={formError}>
         <Input
           value={name}
           onChangeText={(value) => {
             setName(value);
             if (saved) setSaved(false);
           }}
-          placeholder="What should we call you?"
+          placeholder={t("account.placeholder")}
           maxLength={40}
           testID="settings-name"
         />
       </Field>
-      <Button label="Save name" onPress={save} loading={saving} testID="settings-save" />
+      <Button label={t("account.save")} onPress={save} loading={saving} testID="settings-save" />
       {snapshot ? (
         <Text style={styles.meta}>
-          {snapshot.points} points · {snapshot.counts.logs} logged · {snapshot.counts.ideasShared} ideas shared
+          {t("account.meta", {
+            points: snapshot.points,
+            logs: snapshot.counts.logs,
+            ideas: snapshot.counts.ideasShared,
+          })}
         </Text>
       ) : null}
     </Screen>

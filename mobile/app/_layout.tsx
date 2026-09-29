@@ -1,6 +1,8 @@
 import { OnboardingGate } from "@/components/onboarding-gate";
 import { ProfileProvider } from "@/components/profile";
 import { colors } from "@/components/theme";
+import { LocaleProvider } from "@/i18n/LocaleProvider";
+import "@/i18n";
 import { Stack } from "expo-router";
 import Head from "expo-router/head";
 import * as SplashScreen from "expo-splash-screen";
@@ -15,41 +17,43 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <ProfileProvider>
-        <OnboardingGate>
-          <Head>
-            <title>Recycler</title>
-            <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-          </Head>
-          <StatusBar style="dark" />
-          <View style={styles.stage}>
-            <View style={styles.phone}>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.bg },
-                }}
-              >
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen
-                  name="onboarding"
-                  options={{ gestureEnabled: false, animation: "fade" }}
-                />
-                <Stack.Screen
-                  name="display-name"
-                  options={{ gestureEnabled: false, animation: "fade" }}
-                />
-                <Stack.Screen name="browse" />
-                <Stack.Screen name="recipes" />
-                <Stack.Screen name="results" />
-                <Stack.Screen name="category/[id]" />
-                <Stack.Screen name="item/[id]" />
-                <Stack.Screen name="badges" />
-              </Stack>
+      <LocaleProvider>
+        <ProfileProvider>
+          <OnboardingGate>
+            <Head>
+              <title>Recycler</title>
+              <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+            </Head>
+            <StatusBar style="dark" />
+            <View style={styles.stage}>
+              <View style={styles.phone}>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.bg },
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen
+                    name="onboarding"
+                    options={{ gestureEnabled: false, animation: "fade" }}
+                  />
+                  <Stack.Screen
+                    name="display-name"
+                    options={{ gestureEnabled: false, animation: "fade" }}
+                  />
+                  <Stack.Screen name="browse" />
+                  <Stack.Screen name="recipes" />
+                  <Stack.Screen name="results" />
+                  <Stack.Screen name="category/[id]" />
+                  <Stack.Screen name="item/[id]" />
+                  <Stack.Screen name="badges" />
+                </Stack>
+              </View>
             </View>
-          </View>
-        </OnboardingGate>
-      </ProfileProvider>
+          </OnboardingGate>
+        </ProfileProvider>
+      </LocaleProvider>
     </SafeAreaProvider>
   );
 }

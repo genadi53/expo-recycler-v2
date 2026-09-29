@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import type { ComponentProps } from "react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,15 +13,16 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
   createOpen: boolean;
 };
 
-const TABS = {
-  index: { label: "Dashboard", icon: "grid-outline" as const, iconOn: "grid" as const },
-  log: { label: "Log", icon: "book-outline" as const, iconOn: "book" as const },
-  leaderboard: { label: "Leaderboard", icon: "trophy-outline" as const, iconOn: "trophy" as const },
-  settings: { label: "Settings", icon: "settings-outline" as const, iconOn: "settings" as const },
+const TAB_META = {
+  index: { labelKey: "tabs.dashboard", icon: "grid-outline" as const, iconOn: "grid" as const },
+  log: { labelKey: "tabs.log", icon: "book-outline" as const, iconOn: "book" as const },
+  leaderboard: { labelKey: "tabs.leaderboard", icon: "trophy-outline" as const, iconOn: "trophy" as const },
+  settings: { labelKey: "tabs.settings", icon: "settings-outline" as const, iconOn: "settings" as const },
 };
 
 function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
@@ -47,7 +49,7 @@ function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarP
             <Pressable
               key={route.key}
               accessibilityRole="button"
-              accessibilityLabel="Create"
+              accessibilityLabel={t("tabs.shortcuts")}
               accessibilityState={{ selected: createOpen }}
               onPress={onOpenCreate}
               style={styles.slot}
@@ -61,15 +63,16 @@ function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarP
           );
         }
 
-        const item = TABS[route.name as keyof typeof TABS];
+        const item = TAB_META[route.name as keyof typeof TAB_META];
         if (!item) return null;
         const color = focused ? colors.green : "#8d8d8d";
+        const label = t(item.labelKey);
 
         return (
           <Pressable
             key={route.key}
             accessibilityRole="button"
-            accessibilityLabel={item.label}
+            accessibilityLabel={label}
             accessibilityState={{ selected: focused }}
             onPress={onPress}
             style={styles.slot}
@@ -77,7 +80,7 @@ function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarP
           >
             <Ionicons name={focused ? item.iconOn : item.icon} size={26} color={color} />
             <Text style={[styles.label, { color }, focused && styles.labelOn]} numberOfLines={1}>
-              {item.label}
+              {label}
             </Text>
           </Pressable>
         );
@@ -88,6 +91,7 @@ function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarP
 
 export default function TabLayout() {
   const [createOpen, setCreateOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <View style={styles.root}>
@@ -101,11 +105,11 @@ export default function TabLayout() {
         )}
         screenOptions={{ headerShown: false, tabBarShowLabel: false }}
       >
-        <Tabs.Screen name="index" options={{ title: "Dashboard" }} />
-        <Tabs.Screen name="log" options={{ title: "Log" }} />
+        <Tabs.Screen name="index" options={{ title: t("tabs.dashboard") }} />
+        <Tabs.Screen name="log" options={{ title: t("tabs.log") }} />
         <Tabs.Screen
           name="submit"
-          options={{ title: "Submit" }}
+          options={{ title: t("tabs.submit") }}
           listeners={{
             tabPress: (event) => {
               event.preventDefault();
@@ -113,8 +117,8 @@ export default function TabLayout() {
             },
           }}
         />
-        <Tabs.Screen name="leaderboard" options={{ title: "Leaderboard" }} />
-        <Tabs.Screen name="settings" options={{ title: "Settings" }} />
+        <Tabs.Screen name="leaderboard" options={{ title: t("tabs.leaderboard") }} />
+        <Tabs.Screen name="settings" options={{ title: t("tabs.settings") }} />
       </Tabs>
       <CreateSheet visible={createOpen} onClose={() => setCreateOpen(false)} />
     </View>

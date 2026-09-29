@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 
 type QueryState<T> = {
@@ -25,7 +26,7 @@ export function useQuery<T>(key: string, load: () => Promise<T>) {
           setState({
             status: "error",
             data: null,
-            error: err instanceof Error ? err.message : "Something went wrong.",
+            error: err instanceof Error ? err.message : i18n.t("errors.somethingWrong"),
           });
         }
       });

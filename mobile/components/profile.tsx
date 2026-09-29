@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import i18n from "@/i18n";
 import { api } from "@/lib/api";
 import { createId } from "@/lib/format";
 import type { ProfileSnapshot } from "@/lib/types";
@@ -68,7 +69,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           const next = await api.profile(stored.id);
           if (!cancelled) setSnapshot(next);
         } catch (err) {
-          if (!cancelled) setError(err instanceof Error ? err.message : "Could not load your points.");
+          if (!cancelled) setError(err instanceof Error ? err.message : i18n.t("errors.loadPoints"));
         }
       } finally {
         if (!cancelled) setReady(true);
@@ -82,7 +83,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const saveName = useCallback(
     async (displayName: string) => {
       const trimmed = displayName.trim();
-      if (!trimmed) throw new Error("Display name is required.");
+      if (!trimmed) throw new Error(i18n.t("errors.displayNameRequired"));
       const id = profile?.id ?? createId();
       const saved = await api.saveProfile(id, trimmed);
       const stored = withCreatedAt(saved.id, saved.displayName, profileRef.current);

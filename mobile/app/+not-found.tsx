@@ -1,15 +1,16 @@
 import { EmptyState, Screen } from "@/components/ui";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 export default function NotFoundScreen() {
+  const { t } = useTranslation();
   return (
-    <Screen title="Missing page" back>
+    <Screen title={t("notFound.title")} back>
       <EmptyState
-        title="That page is not in the app"
-        body="Head back to the catalog and search for what you have."
-        actionLabel="Go home"
-        onAction={() => router.replace("/")}
-        icon="help-circle-outline"
+        title={t("notFound.emptyTitle")}
+        body={t("notFound.emptyBody")}
+        actionLabel={t("notFound.goHome")}
+        onAction={() => router.replace("/" as Href)}
       />
     </Screen>
   );

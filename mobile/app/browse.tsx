@@ -1,13 +1,16 @@
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { Button, ErrorState, Input, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
+import { categoryLabel } from "@/lib/format";
 import type { Category } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { router, type Href } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function BrowseScreen() {
+  const { t } = useTranslation();
   const { status, data, error, retry } = useQuery("categories", () => api.categories());
   const [query, setQuery] = useState("");
   const [hint, setHint] = useState("");
@@ -15,7 +18,7 @@ export default function BrowseScreen() {
   function search() {
     const q = query.trim();
     if (!q) {
-      setHint("Type what you have.");
+      setHint(t("browse.hint"));
       return;
     }
     setHint("");
@@ -23,9 +26,9 @@ export default function BrowseScreen() {
   }
 
   return (
-    <Screen title="Browse" back>
-      <Text style={styles.tagline}>What do you have, and can it be reused?</Text>
-      <Text style={styles.note}>A shared catalog for households. No account.</Text>
+    <Screen title={t("browse.title")} back>
+      <Text style={styles.tagline}>{t("browse.tagline")}</Text>
+      <Text style={styles.note}>{t("browse.note")}</Text>
 
       <View style={styles.searchBlock}>
         <Input
@@ -34,21 +37,21 @@ export default function BrowseScreen() {
             setQuery(value);
             if (hint) setHint("");
           }}
-          placeholder="Banana peels, jars, cans…"
+          placeholder={t("browse.placeholder")}
           returnKeyType="search"
           onSubmitEditing={search}
           testID="search-input"
           autoCorrect={false}
         />
         {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-        <Button label="Search the catalog" onPress={search} testID="search-submit" />
+        <Button label={t("browse.search")} onPress={search} testID="search-submit" />
       </View>
 
-      <Text style={styles.section}>Or start with a material</Text>
-      {status === "loading" ? <LoadingState label="Looking through the catalog…" /> : null}
+      <Text style={styles.section}>{t("browse.orMaterial")}</Text>
+      {status === "loading" ? <LoadingState label={t("browse.loading")} /> : null}
       {status === "error" ? <ErrorState message={error} onRetry={retry} /> : null}
       {status === "ready" && data?.categories.length === 0 ? (
-        <Text style={styles.note}>No categories yet.</Text>
+        <Text style={styles.note}>{t("browse.noCategories")}</Text>
       ) : null}
       {status === "ready" && data ? (
         <View style={styles.grid}>
@@ -62,7 +65,13 @@ export default function BrowseScreen() {
 }
 
 function CategoryCard({ category }: { category: Category }) {
+  const { t } = useTranslation();
   const accent = categoryAccent[category.id] ?? colors.green;
+  const name = categoryLabel(category.id, category.name);
+  const countLabel =
+    category.itemCount === 1
+      ? t("browse.itemCount", { count: category.itemCount })
+      : t("browse.itemCount_other", { count: category.itemCount });
   return (
     <View style={styles.cardSlot}>
       <Pressable
@@ -72,13 +81,11 @@ function CategoryCard({ category }: { category: Category }) {
         testID={`category-${category.id}`}
       >
         <View style={[styles.cardBar, { backgroundColor: accent }]} />
-        <Text style={styles.cardName}>{category.name}</Text>
+        <Text style={styles.cardName}>{name}</Text>
         <Text style={styles.cardBody} numberOfLines={3}>
           {category.description}
         </Text>
-        <Text style={styles.cardCount}>
-          {category.itemCount} {category.itemCount === 1 ? "item" : "items"}
-        </Text>
+        <Text style={styles.cardCount}>{countLabel}</Text>
       </Pressable>
     </View>
   );

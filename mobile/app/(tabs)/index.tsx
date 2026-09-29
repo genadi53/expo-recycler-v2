@@ -4,33 +4,25 @@ import { RecipePreview } from "@/components/recipe-grid";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { Button, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
+import { categoryLabel } from "@/lib/format";
 import type { CategoryCount, ProfileSnapshot } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { useFocusEffect, router, type Href } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Image, StyleSheet, Text, View } from "react-native";
 
-const GREETINGS = [
-  "Hey",
-  "Welcome back",
-  "Good to see you",
-  "Nice to have you here",
-  "Ready when you are",
-  "Let's keep going",
-  "What are we sorting today",
-  "Another small win awaits",
-];
-
-function pickGreeting(previous?: string) {
-  if (GREETINGS.length <= 1) return GREETINGS[0] ?? "";
-  let next = GREETINGS[Math.floor(Math.random() * GREETINGS.length)]!;
+function pickGreeting(greetings: string[], previous?: string) {
+  if (greetings.length <= 1) return greetings[0] ?? "";
+  let next = greetings[Math.floor(Math.random() * greetings.length)]!;
   while (previous && next === previous) {
-    next = GREETINGS[Math.floor(Math.random() * GREETINGS.length)]!;
+    next = greetings[Math.floor(Math.random() * greetings.length)]!;
   }
   return next;
 }
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const { ready, profile, snapshot, error, refresh } = useProfile();
   const recipes = useQuery("dashboard-recipes", () => api.ideas({ kind: "cook", limit: 4 }));
 
@@ -38,7 +30,7 @@ export default function DashboardScreen() {
     return (
       <Screen>
         <DashboardHeader />
-        <LoadingState label="Loading your dashboard…" />
+        <LoadingState label={t("dashboard.loading")} />
       </Screen>
     );
   }
@@ -48,15 +40,15 @@ export default function DashboardScreen() {
       <Screen>
         <DashboardHeader />
         <EmptyState
-          title="Pick a display name"
-          body="Your points, contribution graph, and charts stay with this name on this phone. Set it in Account under Settings."
+          title={t("dashboard.pickNameTitle")}
+          body={t("dashboard.pickNameBody")}
           icon="person-outline"
-          actionLabel="Open Account"
+          actionLabel={t("dashboard.openAccount")}
           onAction={() => router.push("/settings/account" as Href)}
         />
         {recipes.status === "ready" && recipes.data ? <RecipePreview recipes={recipes.data.ideas} /> : null}
         <View style={styles.ctaBlock}>
-          <Button label="Find an item" onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
+          <Button label={t("dashboard.findItem")} onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
         </View>
       </Screen>
     );
@@ -75,7 +67,7 @@ export default function DashboardScreen() {
     return (
       <Screen>
         <DashboardHeader />
-        <LoadingState label="Loading your dashboard…" />
+        <LoadingState label={t("dashboard.loading")} />
       </Screen>
     );
   }
@@ -89,9 +81,9 @@ export default function DashboardScreen() {
       <CategoryBars rows={snapshot.byCategory ?? []} />
       {recipes.status === "ready" && recipes.data ? <RecipePreview recipes={recipes.data.ideas} /> : null}
       <View style={styles.ctaBlock}>
-        <Button label="Find an item" onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
+        <Button label={t("dashboard.findItem")} onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
         <Button
-          label="Share an idea"
+          label={t("dashboard.shareIdea")}
           tone="secondary"
           onPress={() => router.push("/submit?mode=idea" as Href)}
           testID="cta-submit"
@@ -102,21 +94,30 @@ export default function DashboardScreen() {
 }
 
 function DashboardHeader() {
+  const { t } = useTranslation();
   return (
     <View style={styles.header} testID="dashboard-header">
       <Image
         source={require("../../assets/images/icon.png")}
         style={styles.logo}
-        accessibilityLabel="Recycler logo"
+        accessibilityLabel={t("dashboard.logo")}
       />
-      <Text style={styles.mark}>Recycler</Text>
+      <Text style={styles.mark}>{t("common.recycler")}</Text>
     </View>
   );
 }
 
 function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
-  const [greeting, setGreeting] = useState(() => pickGreeting());
+  const { t, i18n } = useTranslation();
+  const greetings = t("dashboard.greetings", { returnObjects: true }) as string[];
+  const list = Array.isArray(greetings) ? greetings : ["Hey"];
+  const [greeting, setGreeting] = useState(() => pickGreeting(list));
   const firstFocus = useRef(true);
+
+  useEffect(() => {
+    const nextList = t("dashboard.greetings", { returnObjects: true }) as string[];
+    setGreeting(pickGreeting(Array.isArray(nextList) ? nextList : ["Hey"]));
+  }, [i18n.language, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -124,8 +125,10 @@ function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
         firstFocus.current = false;
         return;
       }
-      setGreeting((previous) => pickGreeting(previous));
-    }, []),
+      const nextList = t("dashboard.greetings", { returnObjects: true }) as string[];
+      const fallback = Array.isArray(nextList) ? nextList : ["Hey"];
+      setGreeting((previous) => pickGreeting(fallback, previous));
+    }, [t]),
   );
 
   return (
@@ -135,9 +138,9 @@ function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
         <Text style={styles.hello}>{snapshot.displayName}</Text>
       </View>
       <View style={styles.counts}>
-        <Count label="Reuses" value={snapshot.counts.reuses} />
-        <Count label="Disposals" value={snapshot.counts.disposals} />
-        <Count label="Ideas" value={snapshot.counts.ideasShared} />
+        <Count label={t("dashboard.reuses")} value={snapshot.counts.reuses} />
+        <Count label={t("dashboard.disposals")} value={snapshot.counts.disposals} />
+        <Count label={t("dashboard.ideas")} value={snapshot.counts.ideasShared} />
       </View>
     </View>
   );
@@ -153,15 +156,16 @@ function Count({ label, value }: { label: string; value: number }) {
 }
 
 function ActionSplit({ reuses, disposals }: { reuses: number; disposals: number }) {
+  const { t } = useTranslation();
   const total = reuses + disposals;
   const reusePct = total === 0 ? 0 : reuses / total;
   const disposePct = total === 0 ? 0 : disposals / total;
 
   return (
     <View style={styles.chartBlock} testID="action-split-chart">
-      <Text style={styles.section}>Reuse vs dispose</Text>
+      <Text style={styles.section}>{t("dashboard.reuseVsDispose")}</Text>
       <Text style={styles.chartNote}>
-        {total === 0 ? "Log a reuse or disposal to see the split." : `${reuses} reuses · ${disposals} disposals`}
+        {total === 0 ? t("dashboard.splitEmpty") : t("dashboard.splitCounts", { reuses, disposals })}
       </Text>
       <View style={styles.splitTrack}>
         {total === 0 ? (
@@ -174,21 +178,22 @@ function ActionSplit({ reuses, disposals }: { reuses: number; disposals: number 
         )}
       </View>
       <View style={styles.splitLegend}>
-        <LegendDot color={colors.green} label="Reuse" />
-        <LegendDot color={colors.terra} label="Dispose" />
+        <LegendDot color={colors.green} label={t("dashboard.reuse")} />
+        <LegendDot color={colors.terra} label={t("dashboard.dispose")} />
       </View>
     </View>
   );
 }
 
 function CategoryBars({ rows }: { rows: CategoryCount[] }) {
+  const { t } = useTranslation();
   const max = rows.reduce((n, row) => Math.max(n, row.count), 0);
 
   return (
     <View style={styles.chartBlock} testID="category-chart">
-      <Text style={styles.section}>By material</Text>
+      <Text style={styles.section}>{t("dashboard.byMaterial")}</Text>
       <Text style={styles.chartNote}>
-        {rows.length === 0 ? "Categories show up after you log an item." : "All-time actions by material."}
+        {rows.length === 0 ? t("dashboard.categoriesEmpty") : t("dashboard.categoriesNote")}
       </Text>
       {rows.map((row) => {
         const accent = categoryAccent[row.id] ?? colors.green;
@@ -196,7 +201,7 @@ function CategoryBars({ rows }: { rows: CategoryCount[] }) {
         return (
           <View key={row.id} style={styles.barRow}>
             <Text style={styles.barLabel} numberOfLines={1}>
-              {row.name}
+              {categoryLabel(row.id, row.name)}
             </Text>
             <View style={styles.barTrack}>
               <View style={[styles.barFill, { width: `${width}%`, backgroundColor: accent }]} />

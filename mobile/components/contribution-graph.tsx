@@ -1,12 +1,25 @@
 import { colors } from "@/components/theme";
 import type { ActivityDay } from "@/lib/types";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 const CELL = 12;
 const GAP = 3;
-const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_KEYS = [
+  "months.jan",
+  "months.feb",
+  "months.mar",
+  "months.apr",
+  "months.may",
+  "months.jun",
+  "months.jul",
+  "months.aug",
+  "months.sep",
+  "months.oct",
+  "months.nov",
+  "months.dec",
+] as const;
 
 function levelColor(count: number, max: number): string {
   if (count <= 0) return colors.line;
@@ -31,7 +44,7 @@ function startOfUtcDay(date: Date): Date {
 
 type Week = {
   days: { key: string; count: number; inRange: boolean }[];
-  monthLabel: string | null;
+  monthIndex: number | null;
 };
 
 function buildWeeks(activity: ActivityDay[]): { weeks: Week[]; total: number; max: number } {
@@ -51,7 +64,7 @@ function buildWeeks(activity: ActivityDay[]): { weeks: Week[]; total: number; ma
 
   while (cursor.getTime() <= today.getTime()) {
     const days: Week["days"] = [];
-    let monthLabel: string | null = null;
+    let monthIndex: number | null = null;
     for (let dow = 0; dow < 7; dow++) {
       const key = toDateKey(cursor);
       const inRange = cursor.getTime() >= rangeStart.getTime() && cursor.getTime() <= today.getTime();
@@ -61,29 +74,31 @@ function buildWeeks(activity: ActivityDay[]): { weeks: Week[]; total: number; ma
         if (count > max) max = count;
       }
       if (inRange && dow === 0 && cursor.getUTCMonth() !== lastMonth) {
-        monthLabel = MONTHS[cursor.getUTCMonth()];
+        monthIndex = cursor.getUTCMonth();
         lastMonth = cursor.getUTCMonth();
       }
       days.push({ key, count, inRange });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
-    weeks.push({ days, monthLabel });
+    weeks.push({ days, monthIndex });
   }
 
   return { weeks, total, max };
 }
 
 export function ContributionGraph({ activity }: { activity: ActivityDay[] }) {
+  const { t, i18n } = useTranslation();
   const { weeks, total, max } = useMemo(() => buildWeeks(activity), [activity]);
+  const dayLabels = ["", t("days.mon"), "", t("days.wed"), "", t("days.fri"), ""];
 
   return (
     <View style={styles.wrap} testID="contribution-graph">
-      <Text style={styles.title}>
-        {total} {total === 1 ? "action" : "actions"} in the last year
+      <Text style={styles.title} key={i18n.language}>
+        {total === 1 ? t("graph.actionOne", { count: total }) : t("graph.actionOther", { count: total })}
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.dayCol}>
-          {DAY_LABELS.map((label, index) => (
+          {dayLabels.map((label, index) => (
             <Text key={`d-${index}`} style={styles.dayLabel}>
               {label}
             </Text>
@@ -93,7 +108,9 @@ export function ContributionGraph({ activity }: { activity: ActivityDay[] }) {
           <View style={styles.monthRow}>
             {weeks.map((week, index) => (
               <View key={`m-${index}`} style={styles.monthCell}>
-                {week.monthLabel ? <Text style={styles.monthLabel}>{week.monthLabel}</Text> : null}
+                {week.monthIndex != null ? (
+                  <Text style={styles.monthLabel}>{t(MONTH_KEYS[week.monthIndex]!)}</Text>
+                ) : null}
               </View>
             ))}
           </View>
@@ -117,7 +134,7 @@ export function ContributionGraph({ activity }: { activity: ActivityDay[] }) {
         </View>
       </ScrollView>
       <View style={styles.legend}>
-        <Text style={styles.legendText}>Less</Text>
+        <Text style={styles.legendText}>{t("graph.less")}</Text>
         {[0, 1, 2, 3, 4].map((level) => (
           <View
             key={level}
@@ -127,7 +144,7 @@ export function ContributionGraph({ activity }: { activity: ActivityDay[] }) {
             ]}
           />
         ))}
-        <Text style={styles.legendText}>More</Text>
+        <Text style={styles.legendText}>{t("graph.more")}</Text>
       </View>
     </View>
   );

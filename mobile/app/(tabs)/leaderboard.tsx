@@ -8,66 +8,63 @@ import type { Leader } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { router, type Href } from "expo-router";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function LeaderboardScreen() {
+  const { t } = useTranslation();
   const { ready, profile } = useProfile();
   const [division, setDivision] = useState<DivisionId>(DEFAULT_DIVISION);
   const selected = useMemo(() => DIVISIONS.find((item) => item.id === division) ?? DIVISIONS[0], [division]);
+  const selectedLabel = t(selected.labelKey);
   const key = ready ? `board:${profile?.id ?? "anon"}` : "board:wait";
   const { status, data, error, retry } = useQuery(key, () =>
     ready ? api.leaderboard(profile?.id) : Promise.resolve(null),
   );
 
   return (
-    <Screen title="Leaderboard">
-      <Banner
-        tone="note"
-        title="Friendly competition, not a verified ranking."
-        body="Display names are not tied to an account, so a name can be copied and points can be inflated."
-      />
+    <Screen title={t("leaderboard.title")}>
+      <Banner tone="note" title={t("leaderboard.bannerTitle")} body={t("leaderboard.bannerBody")} />
 
       <View style={styles.divisions} testID="leaderboard-divisions">
-        <Text style={styles.section}>Division</Text>
+        <Text style={styles.section}>{t("leaderboard.division")}</Text>
         <View style={styles.chips}>
           {DIVISIONS.map((item) => (
             <Chip
               key={item.id}
-              label={item.label}
+              label={t(item.labelKey)}
               selected={item.id === division}
               onPress={() => setDivision(item.id)}
               testID={`division-${item.id}`}
             />
           ))}
         </View>
-        <Text style={styles.note}>
-          {selected.label} is a placeholder. Rankings stay by points, the same in every division for now.
-        </Text>
+        <Text style={styles.note}>{t("leaderboard.divisionNote", { label: selectedLabel })}</Text>
       </View>
 
-      {!ready || status === "loading" ? <LoadingState label="Loading the leaderboard…" /> : null}
+      {!ready || status === "loading" ? <LoadingState label={t("leaderboard.loading")} /> : null}
       {ready && status === "error" ? <ErrorState message={error} onRetry={retry} /> : null}
       {ready && status === "ready" && data ? (
         <>
           {data.you ? (
             <View style={styles.you} testID="your-rank">
-              <Text style={styles.youLabel}>Your rank · {selected.label}</Text>
+              <Text style={styles.youLabel}>{t("leaderboard.yourRank", { label: selectedLabel })}</Text>
               <Text style={styles.youRank}>{ordinal(data.you.rank)}</Text>
               <Text style={styles.youMeta}>
-                {data.you.displayName} · {data.you.points} points
+                {t("leaderboard.yourMeta", { name: data.you.displayName, points: data.you.points })}
               </Text>
             </View>
           ) : (
             <>
-              <Text style={styles.note}>Your rank uses the display name stored on this phone.</Text>
-              <Text style={styles.note}>Set a display name in Settings to see your rank.</Text>
+              <Text style={styles.note}>{t("leaderboard.rankUsesName")}</Text>
+              <Text style={styles.note}>{t("leaderboard.setNameHint")}</Text>
             </>
           )}
           {data.leaders.length === 0 ? (
             <EmptyState
-              title="No one is on the board yet"
-              body="Log a reuse or share an idea and your display name takes the first spot."
-              actionLabel="Open your log"
+              title={t("leaderboard.emptyTitle")}
+              body={t("leaderboard.emptyBody")}
+              actionLabel={t("leaderboard.openLog")}
               onAction={() => router.push("/log" as Href)}
               icon="trophy-outline"
             />

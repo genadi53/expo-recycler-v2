@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useProfile } from "@/components/profile";
 import { Button, EmptyState, Field, Input } from "@/components/ui";
@@ -10,6 +11,7 @@ export function DisplayNameForm({
   initialName?: string;
   onSaved?: () => void;
 }) {
+  const { t } = useTranslation();
   const { saveName } = useProfile();
   const [name, setName] = useState(initialName);
   const [saving, setSaving] = useState(false);
@@ -22,7 +24,7 @@ export function DisplayNameForm({
   async function save() {
     setFormError("");
     if (!name.trim()) {
-      setFormError("Display name is required.");
+      setFormError(t("displayName.required"));
       return;
     }
     setSaving(true);
@@ -30,7 +32,7 @@ export function DisplayNameForm({
       await saveName(name);
       onSaved?.();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save that name.");
+      setFormError(err instanceof Error ? err.message : t("displayName.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -38,21 +40,17 @@ export function DisplayNameForm({
 
   return (
     <>
-      <EmptyState
-        title="Pick a display name"
-        body="The log, points, and badges stay with this name on this phone. There is no account. A new phone starts fresh."
-        icon="person-outline"
-      />
-      <Field label="Display name" error={formError}>
+      <EmptyState title={t("displayName.title")} body={t("displayName.body")} icon="person-outline" />
+      <Field label={t("displayName.label")} error={formError}>
         <Input
           value={name}
           onChangeText={setName}
-          placeholder="What should we call you?"
+          placeholder={t("displayName.placeholder")}
           maxLength={40}
           testID="display-name-input"
         />
       </Field>
-      <Button label="Save name" onPress={save} loading={saving} testID="save-name" />
+      <Button label={t("displayName.save")} onPress={save} loading={saving} testID="save-name" />
     </>
   );
 }
