@@ -96,12 +96,6 @@ export default function DashboardScreen() {
           onPress={() => router.push("/submit?mode=idea" as Href)}
           testID="cta-submit"
         />
-        <Button
-          label="Open your log"
-          tone="quiet"
-          onPress={() => router.push("/log" as Href)}
-          testID="cta-log"
-        />
       </View>
     </Screen>
   );
