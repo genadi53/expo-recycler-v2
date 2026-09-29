@@ -18,9 +18,11 @@ import { useProfile } from "@/components/profile";
 import { colors } from "@/components/theme";
 import { Button } from "@/components/ui";
 import { ONBOARDING_SEEN_KEY, ONBOARDING_SLIDES, type OnboardingSlide as Slide } from "@/constants/onboarding";
+import { useTranslation } from "react-i18next";
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { profile } = useProfile();
   const listRef = useRef<FlatList<Slide>>(null);
   const [pageWidth, setPageWidth] = useState(0);
@@ -72,13 +74,13 @@ export default function OnboardingScreen() {
         ) : (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Skip onboarding"
+            accessibilityLabel={t("onboarding.skipA11y")}
             onPress={finish}
             hitSlop={8}
             testID="onboarding-skip"
             style={styles.skipHit}
           >
-            <Text style={styles.skip}>Skip</Text>
+            <Text style={styles.skip}>{t("onboarding.skip")}</Text>
           </Pressable>
         )}
       </View>
@@ -114,7 +116,7 @@ export default function OnboardingScreen() {
 
       <View style={styles.actions}>
         <Button
-          label={last ? "Get started" : "Next"}
+          label={last ? t("onboarding.getStarted") : t("onboarding.next")}
           onPress={() => (last ? void finish() : goTo(index + 1))}
           testID={last ? "onboarding-done" : "onboarding-next"}
         />

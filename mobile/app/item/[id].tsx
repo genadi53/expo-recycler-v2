@@ -2,7 +2,7 @@ import { LogAction } from "@/components/log-action";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { ErrorState, LoadingState, Screen } from "@/components/ui";
 import { absoluteApiUrl, api } from "@/lib/api";
-import { kindLabel } from "@/lib/format";
+import { categoryLabel, kindLabel } from "@/lib/format";
 import type { Idea } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { useLocalSearchParams } from "expo-router";
@@ -32,14 +32,15 @@ export default function ItemScreen() {
 
   const accent = categoryAccent[data.item.categoryId] ?? colors.green;
   const itemImageUri = absoluteApiUrl(data.item.imageUrl);
+  const categoryName = categoryLabel(data.item.categoryId, data.item.categoryName);
   return (
     <Screen
-      title={data.item.categoryName}
+      title={categoryName}
       back
       footer={<LogAction itemId={data.item.id} ideas={data.ideas} logMethods={data.logMethods} />}
     >
       <View style={styles.header}>
-        <Text style={[styles.kicker, { color: accent }]}>{data.item.categoryName}</Text>
+        <Text style={[styles.kicker, { color: accent }]}>{categoryName}</Text>
         <Text style={styles.name}>{data.item.name}</Text>
         {itemImageUri ? (
           <Image
@@ -64,7 +65,7 @@ export default function ItemScreen() {
           <Text style={styles.cardTitle}>{data.disposal.title}</Text>
           {data.disposal.source === "category" ? (
             <Text style={styles.meta}>
-              {t("item.generalPath", { category: data.item.categoryName })}
+              {t("item.generalPath", { category: categoryName })}
             </Text>
           ) : null}
           {data.disposal.steps.map((step, index) => (

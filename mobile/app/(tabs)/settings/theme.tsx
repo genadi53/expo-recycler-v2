@@ -1,5 +1,7 @@
 import { UnderConstructionScreen } from "@/components/under-construction";
+import { useTranslation } from "react-i18next";
 
 export default function ThemeScreen() {
-  return <UnderConstructionScreen title="Theme" />;
+  const { t } = useTranslation();
+  return <UnderConstructionScreen title={t("settings.theme")} />;
 }

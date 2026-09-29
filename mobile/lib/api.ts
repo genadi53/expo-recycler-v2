@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import type {
   Category,
   IdeaImagePayload,
@@ -39,7 +40,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       },
     });
   } catch {
-    throw new ApiError(0, "Could not reach the Recycler API. Start the server and try again.");
+    throw new ApiError(0, i18n.t("errors.apiUnreachable"));
   }
 
   const text = await response.text();
@@ -48,11 +49,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     try {
       data = JSON.parse(text) as { error?: string };
     } catch {
-      throw new ApiError(response.status, "The API returned something unexpected.");
+      throw new ApiError(response.status, i18n.t("errors.apiUnexpected"));
     }
   }
   if (!response.ok) {
-    throw new ApiError(response.status, data.error || "Something went wrong.");
+    throw new ApiError(response.status, data.error || i18n.t("errors.somethingWrong"));
   }
   return data as T;
 }

@@ -2,6 +2,7 @@ import { colors, serif } from "@/components/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BackHandler,
   Platform,
@@ -15,33 +16,34 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
 type CircleShortcut = {
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   href: Href;
   testID: string;
 };
 
 type ListShortcut = {
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   href: Href;
   testID: string;
 };
 
 const CIRCLES: CircleShortcut[] = [
-  { label: "Add item", icon: "add-outline", href: "/submit?mode=item", testID: "shortcut-add-item" },
-  { label: "Recipe", icon: "reader-outline", href: "/submit?mode=idea", testID: "shortcut-recipe" },
-  { label: "Scan", icon: "barcode-outline", href: "/scan", testID: "shortcut-scan" },
-  { label: "Search", icon: "search-outline", href: "/browse", testID: "shortcut-search" },
+  { labelKey: "shortcuts.addItem", icon: "add-outline", href: "/submit?mode=item", testID: "shortcut-add-item" },
+  { labelKey: "shortcuts.recipe", icon: "reader-outline", href: "/submit?mode=idea", testID: "shortcut-recipe" },
+  { labelKey: "shortcuts.scan", icon: "barcode-outline", href: "/scan", testID: "shortcut-scan" },
+  { labelKey: "shortcuts.search", icon: "search-outline", href: "/browse", testID: "shortcut-search" },
 ];
 
 const ROWS: ListShortcut[] = [
-  { label: "Log reuse", icon: "refresh-outline", href: "/browse", testID: "shortcut-log-reuse" },
-  { label: "Beauty use", icon: "sparkles-outline", href: "/submit?kind=beauty&mode=idea", testID: "shortcut-beauty" },
-  { label: "Photos", icon: "camera-outline", href: "/photos", testID: "shortcut-photos" },
+  { labelKey: "shortcuts.logReuse", icon: "refresh-outline", href: "/browse", testID: "shortcut-log-reuse" },
+  { labelKey: "shortcuts.beautyUse", icon: "sparkles-outline", href: "/submit?kind=beauty&mode=idea", testID: "shortcut-beauty" },
+  { labelKey: "shortcuts.photos", icon: "camera-outline", href: "/photos", testID: "shortcut-photos" },
 ];
 export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!visible) return;
@@ -63,7 +65,7 @@ export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: (
     <View style={styles.overlay} pointerEvents="box-none" testID="create-sheet">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Close shortcuts"
+        accessibilityLabel={t("shortcuts.close")}
         onPress={onClose}
         style={styles.dim}
         testID="create-sheet-dim"
@@ -72,7 +74,7 @@ export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: (
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close"
+            accessibilityLabel={t("common.close")}
             onPress={onClose}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed, pointer]}
             hitSlop={8}
@@ -80,45 +82,51 @@ export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: (
           >
             <Ionicons name="close" size={24} color={colors.ink} />
           </Pressable>
-          <Text style={styles.title}>Shortcuts</Text>
+          <Text style={styles.title}>{t("shortcuts.title")}</Text>
           <View style={styles.iconButton} />
         </View>
 
         <View style={styles.circles}>
-          {CIRCLES.map((item) => (
-            <Pressable
-              key={item.label}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-              onPress={() => go(item.href)}
-              style={({ pressed }) => [styles.circleSlot, pressed && styles.pressed, pointer]}
-              testID={item.testID}
-            >
-              <View style={styles.ring}>
-                <Ionicons name={item.icon} size={24} color={colors.green} />
-              </View>
-              <Text style={styles.circleLabel}>{item.label}</Text>
-            </Pressable>
-          ))}
+          {CIRCLES.map((item) => {
+            const label = t(item.labelKey);
+            return (
+              <Pressable
+                key={item.labelKey}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                onPress={() => go(item.href)}
+                style={({ pressed }) => [styles.circleSlot, pressed && styles.pressed, pointer]}
+                testID={item.testID}
+              >
+                <View style={styles.ring}>
+                  <Ionicons name={item.icon} size={24} color={colors.green} />
+                </View>
+                <Text style={styles.circleLabel}>{label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <View style={styles.group}>
-          {ROWS.map((row, index) => (
-            <View key={row.label}>
-              {index > 0 ? <View style={styles.divider} /> : null}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={row.label}
-                onPress={() => go(row.href)}
-                style={({ pressed }) => [styles.row, pressed && styles.pressed, pointer]}
-                testID={row.testID}
-              >
-                <Ionicons name={row.icon} size={22} color={colors.ink} />
-                <Text style={styles.rowLabel}>{row.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-              </Pressable>
-            </View>
-          ))}
+          {ROWS.map((row, index) => {
+            const label = t(row.labelKey);
+            return (
+              <View key={row.labelKey}>
+                {index > 0 ? <View style={styles.divider} /> : null}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  onPress={() => go(row.href)}
+                  style={({ pressed }) => [styles.row, pressed && styles.pressed, pointer]}
+                  testID={row.testID}
+                >
+                  <Ionicons name={row.icon} size={22} color={colors.ink} />
+                  <Text style={styles.rowLabel}>{label}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                </Pressable>
+              </View>
+            );
+          })}
         </View>
       </View>
     </View>

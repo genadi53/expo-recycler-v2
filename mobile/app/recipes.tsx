@@ -3,23 +3,21 @@ import { colors } from "@/components/theme";
 import { EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useQuery } from "@/lib/use-query";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function RecipesScreen() {
+  const { t } = useTranslation();
   const { status, data, error, retry } = useQuery("recipes", () => api.ideas({ kind: "cook" }));
 
   return (
-    <Screen title="Recipes" back>
-      <Text style={styles.lead}>Cook ideas from the shared catalog. Open one to see steps on the item.</Text>
+    <Screen title={t("recipes.title")} back>
+      <Text style={styles.lead}>{t("recipes.lead")}</Text>
 
-      {status === "loading" ? <LoadingState label="Loading recipes…" /> : null}
+      {status === "loading" ? <LoadingState label={t("recipes.loading")} /> : null}
       {status === "error" ? <ErrorState message={error} onRetry={retry} /> : null}
       {status === "ready" && data && data.ideas.length === 0 ? (
-        <EmptyState
-          title="No recipes yet"
-          body="Share a cook idea from Submit and it shows up here right away."
-          icon="restaurant-outline"
-        />
+        <EmptyState title={t("recipes.emptyTitle")} body={t("recipes.emptyBody")} icon="restaurant-outline" />
       ) : null}
       {status === "ready" && data && data.ideas.length > 0 ? (
         <View style={styles.grid} testID="recipes-grid">

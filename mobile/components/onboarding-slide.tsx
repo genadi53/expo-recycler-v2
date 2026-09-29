@@ -1,4 +1,5 @@
 import { Image, Platform, StyleSheet, Text, View, useWindowDimensions, type ViewStyle } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { colors, serif } from "@/components/theme";
 import type { OnboardingSlide as Slide } from "@/constants/onboarding";
@@ -29,7 +30,10 @@ const illustrationEdgeFade: ViewStyle | null =
 
 export function OnboardingSlide({ slide, width }: OnboardingSlideProps) {
   const { height } = useWindowDimensions();
+  const { t } = useTranslation();
   const imageSize = Math.min(width - 40, height * 0.42, 360);
+  const title = t(slide.titleKey);
+  const body = t(slide.bodyKey);
 
   return (
     <View style={[styles.page, { width }]}>
@@ -40,11 +44,11 @@ export function OnboardingSlide({ slide, width }: OnboardingSlideProps) {
             style={styles.artImage}
             resizeMode="contain"
             accessibilityIgnoresInvertColors
-            accessibilityLabel={slide.title}
+            accessibilityLabel={title}
           />
         </View>
-        <Text style={styles.title}>{slide.title}</Text>
-        <Text style={styles.body}>{slide.body}</Text>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.body}>{body}</Text>
       </View>
     </View>
   );

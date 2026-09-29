@@ -458,7 +458,7 @@ function RecipeForm({
           setCreateHint({
             name: trimmedCreateName,
             text: found
-              ? `“${found.name}” already exists. Publishing will add an idea to it (15 points) and keep its current photo.`
+              ? t("submit.itemExistsAttachHint", { name: found.name })
               : t("submit.createsItem"),
           });
         })
@@ -590,10 +590,10 @@ function RecipeForm({
                 maxLength={80}
                 testID="recipe-item-search"
               />
-              {showSearching ? <Text style={styles.hint}>Searching…</Text> : null}
+              {showSearching ? <Text style={styles.hint}>{t("submit.searching")}</Text> : null}
               {showSearchError ? <Text style={styles.inlineError}>{showSearchError}</Text> : null}
               {!showSearching && canSearch && visibleResults.length === 0 && !showSearchError ? (
-                <Text style={styles.hint}>No matches. Create an item instead.</Text>
+                <Text style={styles.hint}>{t("submit.noMatches")}</Text>
               ) : null}
               {visibleResults.map((item) => (
                 <ItemRow key={item.id} item={item} onPress={() => setSelectedItem(item)} />
@@ -805,7 +805,7 @@ function PictureField({
           testID={addTestID}
         >
           <Text style={styles.addPictureLabel}>{t("submit.addPicture")}</Text>
-          <Text style={styles.hint}>Optional. JPEG, PNG, or WebP under 1.5 MB.</Text>
+          <Text style={styles.hint}>{t("submit.pictureHint")}</Text>
         </Pressable>
       )}
     </Field>

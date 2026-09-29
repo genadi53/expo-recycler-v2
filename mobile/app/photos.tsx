@@ -1,11 +1,7 @@
 import { UnderConstructionScreen } from "@/components/under-construction";
+import { useTranslation } from "react-i18next";
 
 export default function PhotosScreen() {
-  return (
-    <UnderConstructionScreen
-      title="Photos"
-      body="Photos are not in this version. Describe the item in Search or Submit instead."
-      icon="camera-outline"
-    />
-  );
+  const { t } = useTranslation();
+  return <UnderConstructionScreen title={t("photos.title")} body={t("photos.body")} icon="camera-outline" />;
 }

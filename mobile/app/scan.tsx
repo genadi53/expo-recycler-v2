@@ -1,11 +1,7 @@
 import { UnderConstructionScreen } from "@/components/under-construction";
+import { useTranslation } from "react-i18next";
 
 export default function ScanScreen() {
-  return (
-    <UnderConstructionScreen
-      title="Scan"
-      body="Scanning is not in this version. Search for the item instead."
-      icon="barcode-outline"
-    />
-  );
+  const { t } = useTranslation();
+  return <UnderConstructionScreen title={t("scan.title")} body={t("scan.body")} icon="barcode-outline" />;
 }

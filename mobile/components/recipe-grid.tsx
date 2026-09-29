@@ -1,14 +1,16 @@
 import { colors, serif } from "@/components/theme";
 import { absoluteApiUrl } from "@/lib/api";
-import { KIND_LABEL } from "@/lib/format";
+import { kindLabel } from "@/lib/format";
 import type { IdeaSummary } from "@/lib/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
 export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
+  const { t } = useTranslation();
   const imageUri = absoluteApiUrl(recipe.imageUrl);
   return (
     <Pressable
@@ -19,9 +21,13 @@ export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
       testID={`recipe-${recipe.id}`}
     >
       {imageUri ? (
-        <Image source={{ uri: imageUri }} style={styles.thumb} accessibilityLabel={`${recipe.title} picture`} />
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.thumb}
+          accessibilityLabel={t("recipes.picture", { title: recipe.title })}
+        />
       ) : null}
-      <Text style={styles.kind}>{KIND_LABEL[recipe.kind]}</Text>
+      <Text style={styles.kind}>{kindLabel(recipe.kind)}</Text>
       <Text style={styles.title} numberOfLines={2}>
         {recipe.title}
       </Text>
@@ -33,13 +39,14 @@ export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
 }
 
 export function RecipePreview({ recipes }: { recipes: IdeaSummary[] }) {
+  const { t } = useTranslation();
   const preview = recipes.slice(0, 4);
   if (preview.length === 0) return null;
 
   return (
     <View style={styles.section} testID="recipe-preview">
-      <Text style={styles.heading}>Recipes</Text>
-      <Text style={styles.note}>Cook ideas from the catalog. Tap one to open the item.</Text>
+      <Text style={styles.heading}>{t("recipes.title")}</Text>
+      <Text style={styles.note}>{t("recipes.previewNote")}</Text>
       <View style={styles.grid}>
         {preview.map((recipe) => (
           <View key={recipe.id} style={styles.slot}>
@@ -49,12 +56,12 @@ export function RecipePreview({ recipes }: { recipes: IdeaSummary[] }) {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Browse recipes"
+        accessibilityLabel={t("recipes.browse")}
         onPress={() => router.push("/recipes" as Href)}
         style={({ pressed }) => [styles.linkRow, pressed && styles.pressed, pointer]}
         testID="browse-recipes-link"
       >
-        <Text style={styles.linkText}>Browse recipes</Text>
+        <Text style={styles.linkText}>{t("recipes.browse")}</Text>
         <Ionicons name="chevron-forward" size={18} color={colors.green} />
       </Pressable>
     </View>

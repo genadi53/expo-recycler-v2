@@ -3,27 +3,26 @@ import { EmptyState, ErrorState, ItemRow, LoadingState, Screen } from "@/compone
 import { api } from "@/lib/api";
 import { useQuery } from "@/lib/use-query";
 import { router, useLocalSearchParams, type Href } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text } from "react-native";
 
 export default function ResultsScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ q?: string }>();
   const q = typeof params.q === "string" ? params.q.trim() : "";
   const { status, data, error, retry } = useQuery(`results:${q}`, () => api.items({ q }));
+  const shortQ = q.length > 28 ? `${q.slice(0, 28)}…` : q;
 
   return (
-    <Screen title="Results" back>
-      <Text style={styles.query}>{q ? `Matches for “${q}”` : "Everything in the catalog"}</Text>
-      {status === "loading" ? <LoadingState label="Searching the catalog…" /> : null}
+    <Screen title={t("results.title")} back>
+      <Text style={styles.query}>{q ? t("results.matchesFor", { q }) : t("results.everything")}</Text>
+      {status === "loading" ? <LoadingState label={t("results.loading")} /> : null}
       {status === "error" ? <ErrorState message={error} onRetry={retry} /> : null}
       {status === "ready" && data && data.items.length === 0 ? (
         <EmptyState
-          title="Nothing matches"
-          body={
-            q
-              ? `The catalog doesn’t have “${q}” yet. Add a reuse idea and it shows up in search right away.`
-              : "The catalog is empty."
-          }
-          actionLabel={q ? `Add “${q.length > 28 ? `${q.slice(0, 28)}…` : q}”` : "Submit an item"}
+          title={t("results.nothingTitle")}
+          body={q ? t("results.nothingBody", { q }) : t("results.emptyCatalog")}
+          actionLabel={q ? t("results.addQuery", { q: shortQ }) : t("results.submitItem")}
           onAction={() =>
             router.push(
               (q ? `/submit?mode=item&item=${encodeURIComponent(q)}` : "/submit?mode=item") as Href,

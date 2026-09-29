@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Image,
@@ -17,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { absoluteApiUrl } from "@/lib/api";
+import { categoryLabel } from "@/lib/format";
 import type { ItemSummary } from "@/lib/types";
 
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
@@ -54,12 +56,13 @@ export function Screen({
 }
 
 export function TopBar({ title, back }: { title: string; back?: boolean }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.topBar}>
       {back ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t("common.goBack")}
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           style={[styles.iconButton, pointer]}
           hitSlop={8}
@@ -178,14 +181,15 @@ export function LoadingState({ label }: { label: string }) {
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.state} testID="error-state">
       <View style={[styles.stateIcon, { backgroundColor: colors.dangerSoft }]}>
         <Ionicons name="cloud-offline-outline" size={28} color={colors.danger} />
       </View>
-      <Text style={styles.stateTitle}>Something went wrong</Text>
+      <Text style={styles.stateTitle}>{t("errors.somethingWrong")}</Text>
       <Text style={styles.stateBody}>{message}</Text>
-      {onRetry ? <Button label="Try again" onPress={onRetry} /> : null}
+      {onRetry ? <Button label={t("common.tryAgain")} onPress={onRetry} /> : null}
     </View>
   );
 }
@@ -216,12 +220,17 @@ export function EmptyState({
 }
 
 export function ItemRow({ item, onPress }: { item: ItemSummary; onPress: () => void }) {
+  const { t } = useTranslation();
   const accent = categoryAccent[item.categoryId] ?? colors.green;
   const imageUri = absoluteApiUrl(item.imageUrl);
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.itemRow, pressed && styles.pressed, pointer]}>
       {imageUri ? (
-        <Image source={{ uri: imageUri }} style={styles.itemThumb} accessibilityLabel={`${item.name} picture`} />
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.itemThumb}
+          accessibilityLabel={t("item.picture", { name: item.name })}
+        />
       ) : (
         <View style={[styles.accent, { backgroundColor: accent }]} />
       )}
@@ -230,7 +239,7 @@ export function ItemRow({ item, onPress }: { item: ItemSummary; onPress: () => v
         <Text style={styles.itemSummary} numberOfLines={2}>
           {item.summary}
         </Text>
-        <Text style={styles.itemMeta}>{item.categoryName}</Text>
+        <Text style={styles.itemMeta}>{categoryLabel(item.categoryId, item.categoryName)}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.muted} />
     </Pressable>
