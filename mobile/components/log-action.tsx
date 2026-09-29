@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Banner, Button } from "@/components/ui";
 import { useProfile } from "@/components/profile";
 import { colors, serif } from "@/components/theme";
 import { api } from "@/lib/api";
-import { KIND_LABEL } from "@/lib/format";
+import { kindLabel } from "@/lib/format";
 import type { Idea, LogMethod, UnlockedBadge } from "@/lib/types";
 import { router, type Href } from "expo-router";
 
@@ -17,6 +18,7 @@ export function LogAction({
   ideas: Idea[];
   logMethods: LogMethod[];
 }) {
+  const { t } = useTranslation();
   const { profile, refresh } = useProfile();
   const [mode, setMode] = useState<"reuse" | "dispose" | null>(null);
   const [ideaId, setIdeaId] = useState(ideas[0]?.id ?? "");
@@ -34,7 +36,7 @@ export function LogAction({
   async function confirm() {
     setError("");
     if (!profile) {
-      setError("Pick a display name first.");
+      setError(t("logAction.pickNameFirst"));
       return;
     }
     setSaving(true);
@@ -47,7 +49,7 @@ export function LogAction({
       setSuccess({ points: result.pointsAwarded, badges: result.badgesUnlocked });
       setMode(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save that.");
+      setError(err instanceof Error ? err.message : t("logAction.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -58,45 +60,49 @@ export function LogAction({
       {success ? (
         <Banner
           tone="good"
-          title={`Logged. +${success.points} points.`}
+          title={t("logAction.loggedTitle", { points: success.points })}
           body={
             success.badges.length
-              ? `Unlocked ${success.badges.map((badge) => badge.title).join(", ")}.`
-              : "It’s on your personal log."
+              ? t("logAction.unlockedBadges", {
+                  badges: success.badges.map((badge) => badge.title).join(", "),
+                })
+              : t("logAction.onLog")
           }
         />
       ) : null}
-      {error ? <Banner tone="bad" title="Could not save that" body={error} /> : null}
+      {error ? <Banner tone="bad" title={t("logAction.couldNotSave")} body={error} /> : null}
 
       {mode === null ? (
         <View style={styles.actions}>
           <Button
-            label="I reused this"
+            label={t("logAction.iReused")}
             onPress={() => open("reuse")}
             disabled={ideas.length === 0}
             testID="reuse-button"
           />
           <Button
-            label="I disposed of this"
+            label={t("logAction.iDisposed")}
             tone="secondary"
             onPress={() => open("dispose")}
             disabled={logMethods.length === 0}
             testID="dispose-button"
           />
           {ideas.length === 0 ? (
-            <Text style={styles.hint}>No reuse ideas yet. Submit one and it will show up here.</Text>
+            <Text style={styles.hint}>{t("logAction.noIdeasHint")}</Text>
           ) : null}
         </View>
       ) : (
         <View style={styles.panel}>
-          <Text style={styles.panelTitle}>{mode === "reuse" ? "Which idea did you use?" : "How did you get rid of it?"}</Text>
+          <Text style={styles.panelTitle}>
+            {mode === "reuse" ? t("logAction.whichIdea") : t("logAction.howDispose")}
+          </Text>
           {mode === "reuse"
             ? ideas.map((idea) => (
                 <Choice
                   key={idea.id}
                   selected={idea.id === ideaId}
                   title={idea.title}
-                  meta={`${KIND_LABEL[idea.kind]} · 10 points`}
+                  meta={t("logAction.kindPoints", { kind: kindLabel(idea.kind) })}
                   onPress={() => setIdeaId(idea.id)}
                 />
               ))
@@ -105,31 +111,39 @@ export function LogAction({
                   key={entry.method}
                   selected={entry.method === method}
                   title={entry.label}
-                  meta={`${entry.points} points${entry.recommended ? " · suggested" : ""}`}
+                  meta={
+                    entry.recommended
+                      ? t("logAction.methodPointsSuggested", { points: entry.points })
+                      : t("logAction.methodPoints", { points: entry.points })
+                  }
                   onPress={() => setMethod(entry.method)}
                 />
               ))}
           {!profile ? (
             <Button
-              label="Pick a display name first"
+              label={t("logAction.pickNameButton")}
               onPress={() => router.push("/display-name" as Href)}
               testID="log-pick-name"
             />
           ) : null}
           {mode === "dispose" && method === "trash" ? (
-            <Text style={styles.hint}>
-              Bag it with household trash. Keep it out of recycling if it is dirty or not accepted where you live.
-            </Text>
+            <Text style={styles.hint}>{t("logAction.trashHint")}</Text>
           ) : null}
           <View style={styles.actions}>
             <Button
-              label={mode === "reuse" ? "Log reuse · 10 pts" : `Log disposal · ${logMethods.find((entry) => entry.method === method)?.points ?? 0} pts`}
+              label={
+                mode === "reuse"
+                  ? t("logAction.logReuse")
+                  : t("logAction.logDisposal", {
+                      points: logMethods.find((entry) => entry.method === method)?.points ?? 0,
+                    })
+              }
               onPress={confirm}
               loading={saving}
               disabled={(mode === "reuse" ? !ideaId : !method) || !profile}
               testID="confirm-log"
             />
-            <Button label="Cancel" tone="quiet" onPress={() => setMode(null)} disabled={saving} />
+            <Button label={t("common.cancel")} tone="quiet" onPress={() => setMode(null)} disabled={saving} />
           </View>
         </View>
       )}
