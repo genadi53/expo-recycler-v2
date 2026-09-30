@@ -5,6 +5,7 @@ import { categoryAccent, colors, serif } from "@/components/theme";
 import { Button, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { categoryLabel } from "@/lib/format";
+import { submitRoute } from "@/lib/submit-route";
 import type { CategoryCount, ProfileSnapshot } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { useFocusEffect, router, type Href } from "expo-router";
@@ -85,7 +86,7 @@ export default function DashboardScreen() {
         <Button
           label={t("dashboard.shareIdea")}
           tone="secondary"
-          onPress={() => router.push("/submit?mode=idea" as Href)}
+          onPress={() => router.push(submitRoute({ mode: "idea" }))}
           testID="cta-submit"
         />
       </View>

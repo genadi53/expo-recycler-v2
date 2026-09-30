@@ -4,6 +4,7 @@ import { Banner, Button, Chip, EmptyState, ErrorState, Field, Input, ItemRow, Lo
 import i18n from "@/i18n";
 import { api } from "@/lib/api";
 import { categoryLabel, kindLabel } from "@/lib/format";
+import { submitRoute } from "@/lib/submit-route";
 import type { Category, IdeaImagePayload, ItemSummary, SubmissionResult } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import * as ImagePicker from "expo-image-picker";
@@ -46,8 +47,15 @@ function mimeFromAsset(asset: ImagePicker.ImagePickerAsset): IdeaImagePayload["m
 
 export default function SubmitScreen() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ item?: string; category?: string; kind?: string; mode?: string }>();
+  const params = useLocalSearchParams<{
+    item?: string;
+    category?: string;
+    kind?: string;
+    mode?: string;
+    fresh?: string;
+  }>();
   const mode = parseMode(typeof params.mode === "string" ? params.mode : undefined);
+  const fresh = typeof params.fresh === "string" ? params.fresh : "";
   const { profile, refresh } = useProfile();
   const { status, data, error, retry } = useQuery("submit-categories", () => api.categories());
   const [success, setSuccess] = useState<SubmissionResult | null>(null);
@@ -55,6 +63,14 @@ export default function SubmitScreen() {
 
   const screenTitle =
     mode === "item" ? t("submit.addItem") : mode === "idea" ? t("submit.addRecipe") : t("submit.title");
+
+  // Drawer / deep links reuse this tab screen. A new `fresh` token means start over,
+  // even when mode stays the same (e.g. Add item again after a success screen).
+  useEffect(() => {
+    if (!fresh) return;
+    setSuccess(null);
+    setFormKey((value) => value + 1);
+  }, [fresh]);
 
   function another() {
     setSuccess(null);
@@ -140,13 +156,13 @@ export default function SubmitScreen() {
         <Text style={styles.body}>{t("submit.choosePath")}</Text>
         <Button
           label={t("submit.addItem")}
-          onPress={() => router.replace("/submit?mode=item" as Href)}
+          onPress={() => router.replace(submitRoute({ mode: "item" }))}
           testID="choose-add-item"
         />
         <Button
           label={t("submit.addRecipe")}
           tone="secondary"
-          onPress={() => router.replace("/submit?mode=idea" as Href)}
+          onPress={() => router.replace(submitRoute({ mode: "idea" }))}
           testID="choose-add-recipe"
         />
       </Screen>

@@ -1,6 +1,7 @@
 import { colors, serif } from "@/components/theme";
 import { EmptyState, ErrorState, ItemRow, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
+import { submitRoute } from "@/lib/submit-route";
 import { useQuery } from "@/lib/use-query";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -24,9 +25,7 @@ export default function ResultsScreen() {
           body={q ? t("results.nothingBody", { q }) : t("results.emptyCatalog")}
           actionLabel={q ? t("results.addQuery", { q: shortQ }) : t("results.submitItem")}
           onAction={() =>
-            router.push(
-              (q ? `/submit?mode=item&item=${encodeURIComponent(q)}` : "/submit?mode=item") as Href,
-            )
+            router.push(q ? submitRoute({ mode: "item", item: q }) : submitRoute({ mode: "item" }))
           }
           icon="search-outline"
         />

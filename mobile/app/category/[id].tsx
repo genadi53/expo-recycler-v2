@@ -2,6 +2,7 @@ import { colors } from "@/components/theme";
 import { EmptyState, ErrorState, ItemRow, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { categoryLabel } from "@/lib/format";
+import { submitRoute } from "@/lib/submit-route";
 import { useQuery } from "@/lib/use-query";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -30,7 +31,7 @@ export default function CategoryScreen() {
           title={t("category.emptyTitle")}
           body={t("category.emptyBody")}
           actionLabel={t("category.addItem")}
-          onAction={() => router.push(`/submit?mode=item&category=${id}` as Href)}
+          onAction={() => router.push(submitRoute({ mode: "item", category: id }))}
         />
       ) : null}
       {status === "ready" && data

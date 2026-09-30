@@ -1,4 +1,5 @@
 import { colors, serif } from "@/components/theme";
+import { submitRoute } from "@/lib/submit-route";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 import { useEffect } from "react";
@@ -18,28 +19,33 @@ const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 type CircleShortcut = {
   labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: Href;
+  href: () => Href;
   testID: string;
 };
 
 type ListShortcut = {
   labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href: Href;
+  href: () => Href;
   testID: string;
 };
 
 const CIRCLES: CircleShortcut[] = [
-  { labelKey: "shortcuts.addItem", icon: "add-outline", href: "/submit?mode=item", testID: "shortcut-add-item" },
-  { labelKey: "shortcuts.recipe", icon: "reader-outline", href: "/submit?mode=idea", testID: "shortcut-recipe" },
-  { labelKey: "shortcuts.scan", icon: "barcode-outline", href: "/scan", testID: "shortcut-scan" },
-  { labelKey: "shortcuts.search", icon: "search-outline", href: "/browse", testID: "shortcut-search" },
+  { labelKey: "shortcuts.addItem", icon: "add-outline", href: () => submitRoute({ mode: "item" }), testID: "shortcut-add-item" },
+  { labelKey: "shortcuts.recipe", icon: "reader-outline", href: () => submitRoute({ mode: "idea" }), testID: "shortcut-recipe" },
+  { labelKey: "shortcuts.scan", icon: "barcode-outline", href: () => "/scan", testID: "shortcut-scan" },
+  { labelKey: "shortcuts.search", icon: "search-outline", href: () => "/browse", testID: "shortcut-search" },
 ];
 
 const ROWS: ListShortcut[] = [
-  { labelKey: "shortcuts.logReuse", icon: "refresh-outline", href: "/browse", testID: "shortcut-log-reuse" },
-  { labelKey: "shortcuts.beautyUse", icon: "sparkles-outline", href: "/submit?kind=beauty&mode=idea", testID: "shortcut-beauty" },
-  { labelKey: "shortcuts.photos", icon: "camera-outline", href: "/photos", testID: "shortcut-photos" },
+  { labelKey: "shortcuts.logReuse", icon: "refresh-outline", href: () => "/browse", testID: "shortcut-log-reuse" },
+  {
+    labelKey: "shortcuts.beautyUse",
+    icon: "sparkles-outline",
+    href: () => submitRoute({ mode: "idea", kind: "beauty" }),
+    testID: "shortcut-beauty",
+  },
+  { labelKey: "shortcuts.photos", icon: "camera-outline", href: () => "/photos", testID: "shortcut-photos" },
 ];
 export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
@@ -56,9 +62,9 @@ export function CreateSheet({ visible, onClose }: { visible: boolean; onClose: (
 
   if (!visible) return null;
 
-  function go(href: Href) {
+  function go(href: () => Href) {
     onClose();
-    router.push(href);
+    router.push(href());
   }
 
   return (
