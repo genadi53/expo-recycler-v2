@@ -48,6 +48,7 @@ export default function RootLayout() {
                   <Stack.Screen name="category/[id]" />
                   <Stack.Screen name="item/[id]" />
                   <Stack.Screen name="badges" />
+                  <Stack.Screen name="impact" />
                 </Stack>
               </View>
             </View>
