@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Recycler",
+    "name": "Againful",
     "slug": "recycler",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,8 +15,8 @@
         "tinted": "./assets/images/icon-tinted.png"
       },
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Recycler uses your photo library so you can attach a picture to a reuse idea.",
-        "NSCameraUsageDescription": "Recycler uses the camera so you can photograph a reuse idea."
+        "NSPhotoLibraryUsageDescription": "Againful uses your photo library so you can attach a picture to a reuse idea.",
+        "NSCameraUsageDescription": "Againful uses the camera so you can photograph a reuse idea."
       }
     },
     "android": {
@@ -47,8 +47,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Recycler uses your photo library so you can attach a picture to a reuse idea.",
-          "cameraPermission": "Recycler uses the camera so you can photograph a reuse idea."
+          "photosPermission": "Againful uses your photo library so you can attach a picture to a reuse idea.",
+          "cameraPermission": "Againful uses the camera so you can photograph a reuse idea."
         }
       ]
     ],

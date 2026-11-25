@@ -20,7 +20,7 @@ const TAB_META = {
   settings: { labelKey: "tabs.settings", icon: "settings-outline" as const, iconOn: "settings" as const },
 };
 
-function RecyclerTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarProps) {
+function AppTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
@@ -97,7 +97,7 @@ export default function TabLayout() {
     <View style={styles.root}>
       <Tabs
         tabBar={(props) => (
-          <RecyclerTabBar
+          <AppTabBar
             {...props}
             onOpenCreate={() => setCreateOpen(true)}
             createOpen={createOpen}

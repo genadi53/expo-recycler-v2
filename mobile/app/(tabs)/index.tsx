@@ -103,7 +103,7 @@ function DashboardHeader() {
         style={styles.logo}
         accessibilityLabel={t("dashboard.logo")}
       />
-      <Text style={styles.mark}>{t("common.recycler")}</Text>
+      <Text style={styles.mark}>{t("common.appName")}</Text>
     </View>
   );
 }
