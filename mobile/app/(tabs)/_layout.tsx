@@ -65,7 +65,7 @@ function AppTabBar({ state, navigation, onOpenCreate, createOpen }: TabBarProps)
 
         const item = TAB_META[route.name as keyof typeof TAB_META];
         if (!item) return null;
-        const color = focused ? colors.green : "#8d8d8d";
+        const color = focused ? colors.green : colors.muted;
         const label = t(item.labelKey);
 
         return (
@@ -132,9 +132,9 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.card,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#e4e4e4",
+    borderTopColor: colors.line,
     paddingTop: 8,
     minHeight: 72,
   },
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 2.5,
     borderRadius: 2,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.card,
   },
   plusBarVertical: {
     width: 2.5,

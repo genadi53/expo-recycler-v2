@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     borderLeftWidth: Platform.OS === "web" ? 1 : 0,
     borderRightWidth: Platform.OS === "web" ? 1 : 0,
-    borderColor: "#ddd4c6",
+    borderColor: colors.line,
     overflow: "hidden",
   },
 });

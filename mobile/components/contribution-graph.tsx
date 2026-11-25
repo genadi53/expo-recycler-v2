@@ -25,9 +25,9 @@ function levelColor(count: number, max: number): string {
   if (count <= 0) return colors.line;
   if (max <= 1) return colors.green;
   const ratio = count / max;
-  if (ratio <= 0.25) return "#a8c9b4";
-  if (ratio <= 0.5) return "#6f9f7f";
-  if (ratio <= 0.75) return "#3d7a56";
+  if (ratio <= 0.25) return colors.greenSoft;
+  if (ratio <= 0.5) return "#86a57d";
+  if (ratio <= 0.75) return "#5b7f62";
   return colors.green;
 }
 

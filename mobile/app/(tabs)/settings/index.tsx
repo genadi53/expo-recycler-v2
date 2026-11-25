@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarLetter: { color: "#fffdf8", fontSize: 22, fontWeight: "800" },
+  avatarLetter: { color: colors.card, fontSize: 22, fontWeight: "800" },
   profileCopy: { flex: 1, gap: 2 },
   profileName: { fontSize: 22, fontWeight: "700", color: colors.ink },
   profileMeta: { color: colors.muted, fontSize: 14 },
