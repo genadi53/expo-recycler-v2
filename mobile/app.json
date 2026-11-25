@@ -9,6 +9,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "icon": {
+        "light": "./assets/images/icon.png",
+        "dark": "./assets/images/icon-dark.png",
+        "tinted": "./assets/images/icon-tinted.png"
+      },
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Recycler uses your photo library so you can attach a picture to a reuse idea.",
         "NSCameraUsageDescription": "Recycler uses the camera so you can photograph a reuse idea."
@@ -16,9 +21,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#f4efe6",
+        "backgroundColor": "#F7F3EA",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -37,7 +41,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#f4efe6"
+          "backgroundColor": "#F7F3EA"
         }
       ],
       [
