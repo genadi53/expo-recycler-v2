@@ -25,7 +25,7 @@ function pickGreeting(greetings: string[], previous?: string) {
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const { ready, profile, snapshot, error, refresh } = useProfile();
-  const recipes = useQuery("dashboard-recipes", () => api.ideas({ kind: "cook", limit: 4 }));
+  const recipes = useQuery("dashboard-recipes", () => api.ideas({ kind: "kitchen", limit: 4 }));
 
   if (!ready) {
     return (

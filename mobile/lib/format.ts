@@ -27,14 +27,6 @@ export const METHOD_LABEL: Record<string, string> = new Proxy(
   },
 );
 
-/** @deprecated Prefer kindLabel() so the active locale is used. */
-export const KIND_LABEL = new Proxy(
-  {} as Record<"cook" | "beauty" | "art" | "useful", string>,
-  {
-    get: (_target, prop: string) => kindLabel(prop),
-  },
-);
-
 export function ordinal(rank: number): string {
   const locale = i18n.language || "en-US";
   if (locale.startsWith("bg")) return `${rank}.`;

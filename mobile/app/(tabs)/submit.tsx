@@ -1,4 +1,5 @@
 import { useProfile } from "@/components/profile";
+import { IDEA_KIND_META, IDEA_KINDS, parseIdeaKind, type IdeaKind } from "@/constants/idea-kinds";
 import { colors, serif } from "@/components/theme";
 import { Banner, Button, Chip, EmptyState, ErrorState, Field, Input, ItemRow, LoadingState, Screen } from "@/components/ui";
 import i18n from "@/i18n";
@@ -13,8 +14,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
-const KINDS = ["cook", "beauty", "art", "useful"] as const;
-type IdeaKind = (typeof KINDS)[number];
 type SubmitMode = "idea" | "item";
 type ItemAttachMode = "search" | "create";
 
@@ -24,11 +23,6 @@ type PickedPicture = {
   uri: string;
   payload: IdeaImagePayload;
 };
-
-function parseKind(value: string | undefined): IdeaKind | null {
-  if (!value) return null;
-  return (KINDS as readonly string[]).includes(value) ? (value as IdeaKind) : null;
-}
 
 function parseMode(value: string | undefined): SubmitMode | null {
   if (value === "idea" || value === "item") return value;
@@ -171,7 +165,7 @@ export default function SubmitScreen() {
 
   const initialItem = typeof params.item === "string" ? params.item : "";
   const initialCategory = typeof params.category === "string" ? params.category : "";
-  const initialKind = parseKind(typeof params.kind === "string" ? params.kind : undefined) ?? "cook";
+  const initialKind = parseIdeaKind(typeof params.kind === "string" ? params.kind : undefined) ?? "kitchen";
 
   if (mode === "item") {
     return (
@@ -715,8 +709,16 @@ function IdeaFields({
     <>
       <Field label={t("submit.ideaKind")}>
         <View style={styles.chips}>
-          {KINDS.map((entry) => (
-            <Chip key={entry} label={kindLabel(entry)} selected={kind === entry} onPress={() => setKind(entry)} />
+          {IDEA_KINDS.map((entry) => (
+            <Chip
+              key={entry}
+              label={kindLabel(entry)}
+              icon={IDEA_KIND_META[entry].icon}
+              iconColor={IDEA_KIND_META[entry].accent}
+              selected={kind === entry}
+              onPress={() => setKind(entry)}
+              testID={`submit-kind-${entry}`}
+            />
           ))}
         </View>
       </Field>

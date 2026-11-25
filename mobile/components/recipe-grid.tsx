@@ -1,6 +1,6 @@
+import { IdeaKindLabel } from "@/components/idea-kind-label";
 import { colors, serif } from "@/components/theme";
 import { absoluteApiUrl } from "@/lib/api";
-import { kindLabel } from "@/lib/format";
 import type { IdeaSummary } from "@/lib/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
@@ -27,7 +27,7 @@ export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
           accessibilityLabel={t("recipes.picture", { title: recipe.title })}
         />
       ) : null}
-      <Text style={styles.kind}>{kindLabel(recipe.kind)}</Text>
+      <IdeaKindLabel kind={recipe.kind} style={styles.kind} iconSize={12} />
       <Text style={styles.title} numberOfLines={2}>
         {recipe.title}
       </Text>

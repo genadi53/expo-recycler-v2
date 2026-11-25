@@ -8,7 +8,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 export default function RecipesScreen() {
   const { t } = useTranslation();
-  const { status, data, error, retry } = useQuery("recipes", () => api.ideas({ kind: "cook" }));
+  const { status, data, error, retry } = useQuery("recipes", () => api.ideas({ kind: "kitchen" }));
 
   return (
     <Screen title={t("recipes.title")} back>

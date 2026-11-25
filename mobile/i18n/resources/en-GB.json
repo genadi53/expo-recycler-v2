@@ -121,13 +121,13 @@
   },
   "recipes": {
     "title": "Recipes",
-    "previewNote": "Cook ideas from the catalog. Tap one to open the item.",
+    "previewNote": "Kitchen ideas from the catalog. Tap one to open the item.",
     "browse": "Browse recipes",
     "loading": "Loading recipes…",
     "emptyTitle": "No recipes yet",
-    "emptyBody": "Share a cook idea from Submit and it shows up here right away.",
+    "emptyBody": "Share a kitchen idea from Submit and it shows up here right away.",
     "picture": "{{title}} picture",
-    "lead": "Cook ideas from the shared catalog. Open one to see steps on the item."
+    "lead": "Kitchen ideas from the shared catalog. Open one to see steps on the item."
   },
   "log": {
     "title": "Your log",
@@ -340,7 +340,7 @@
     "lookUpTitle": "Look up what you have",
     "lookUpBody": "Search the catalog or pick a material. Againful shows whether it can be reused, and a plain way to get rid of it if not.",
     "reuseFirstTitle": "Reuse before disposal",
-    "reuseFirstBody": "Follow a cook, beauty, art, or useful idea. Disposal steps sit on the same page. Trash is the last stop, not the first.",
+    "reuseFirstBody": "Follow a kitchen, beauty, cleaning, garden, home, or crafts idea. Disposal steps sit on the same page. Trash is the last stop, not the first.",
     "logActionsTitle": "Log it on this phone",
     "logActionsBody": "Record each reuse or disposal. No account and no password.",
     "keepGoingTitle": "Make it a habit",
@@ -354,10 +354,12 @@
     "trash": "Trash"
   },
   "kind": {
-    "cook": "Cook",
+    "kitchen": "Kitchen",
     "beauty": "Beauty",
-    "art": "Art",
-    "useful": "Useful"
+    "cleaning": "Cleaning",
+    "garden": "Garden",
+    "home": "Home",
+    "crafts": "Crafts"
   },
   "format": {
     "unlocked": "Unlocked",

@@ -8,11 +8,15 @@ import { nowIso, parseStringArray, uniqueItemId, withTransaction, type DB } from
 import {
   DISPOSAL_METHODS,
   EXISTING_ITEM_POINTS,
-  IDEA_KINDS,
+  IDEA_KIND_MESSAGE,
   METHOD_LABEL,
   NEW_ITEM_POINTS,
   REUSE_POINTS,
   disposalPoints,
+  expandFilterKind,
+  isLegacyIdeaKind,
+  normalizeSubmittedKind,
+  recordIdeaKindAlias,
   type DisposalMethod,
 } from "./rules.js";
 
@@ -47,7 +51,11 @@ const submissionSchema = z
     profileId: z.string().trim().min(1, "Profile id is required.").max(80, "Profile id is too long."),
     category: z.string().trim().min(1, "Category is required.").max(40),
     itemName: z.string().trim().min(1, "Item name is required.").max(80, "Item name is too long."),
-    ideaKind: z.enum(IDEA_KINDS, { error: "Pick a kind: cook, beauty, art, or useful." }).optional(),
+    // New ids, or legacy ids from older builds (stored under the new id; see SUBMIT_ALIAS).
+    ideaKind: z
+      .string({ error: IDEA_KIND_MESSAGE })
+      .refine((value) => normalizeSubmittedKind(value) != null, { error: IDEA_KIND_MESSAGE })
+      .optional(),
     title: z.string().trim().max(120, "Title is too long.").optional(),
     materials: z.string().trim().max(2000, "Materials are too long.").optional(),
     steps: z
@@ -61,7 +69,7 @@ const submissionSchema = z
     const hasIdea = submissionHasIdea(value);
     if (!hasIdea) return;
     if (!value.ideaKind) {
-      ctx.addIssue({ code: "custom", message: "Pick a kind: cook, beauty, art, or useful.", path: ["ideaKind"] });
+      ctx.addIssue({ code: "custom", message: IDEA_KIND_MESSAGE, path: ["ideaKind"] });
     }
     if (!value.title?.trim()) {
       ctx.addIssue({ code: "custom", message: "Title is required.", path: ["title"] });
@@ -431,9 +439,11 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
     const kind = (c.req.query("kind") ?? "").trim();
     const limitRaw = Number(c.req.query("limit") ?? "0");
     const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 100) : 0;
-    if (kind && !(IDEA_KINDS as readonly string[]).includes(kind)) {
-      throw new HttpError(400, "Pick a kind: cook, beauty, art, or useful.");
+    const kinds = kind ? expandFilterKind(kind) : null;
+    if (kind && !kinds) {
+      throw new HttpError(400, IDEA_KIND_MESSAGE);
     }
+    if (isLegacyIdeaKind(kind)) recordIdeaKindAlias("filter", kind);
     const params: string[] = [];
     let sql = `
       SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.image_filename,
@@ -445,9 +455,9 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
       LEFT JOIN profiles ON profiles.id = ideas.author_profile_id
       WHERE ideas.status = 'published'
     `;
-    if (kind) {
-      sql += " AND ideas.kind = ?";
-      params.push(kind);
+    if (kinds) {
+      sql += ` AND ideas.kind IN (${kinds.map(() => "?").join(", ")})`;
+      params.push(...kinds);
     }
     sql += " ORDER BY ideas.created_at DESC, ideas.rowid DESC";
     if (limit) sql += ` LIMIT ${limit}`;
@@ -620,6 +630,8 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
     if (!parsed.success) throw new HttpError(400, zodMessage(parsed.error));
     const body = parsed.data;
     const withIdea = submissionHasIdea(body);
+    const ideaKind = withIdea && body.ideaKind ? normalizeSubmittedKind(body.ideaKind) : null;
+    if (ideaKind && body.ideaKind && isLegacyIdeaKind(body.ideaKind)) recordIdeaKindAlias("submit", body.ideaKind);
     const steps = withIdea ? normalizeSteps(body.steps!) : null;
     const disposalNote = body.disposalNote?.trim() ?? "";
     const decodedImage = body.image ? decodeIdeaImage(body.image) : null;
@@ -693,7 +705,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
         ).run(
           ideaId,
           itemId,
-          body.ideaKind!,
+          ideaKind!,
           body.title!.trim(),
           body.materials!.trim(),
           JSON.stringify(steps),
