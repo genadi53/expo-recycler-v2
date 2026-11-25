@@ -1,17 +1,13 @@
 import { ContributionGraph } from "@/components/contribution-graph";
 import { useProfile } from "@/components/profile";
-import { RecipePreview } from "@/components/recipe-grid";
 import { categoryAccent, colors, serif } from "@/components/theme";
-import { Button, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
-import { api } from "@/lib/api";
+import { EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { categoryLabel } from "@/lib/format";
-import { submitRoute } from "@/lib/submit-route";
 import type { CategoryCount, ProfileSnapshot } from "@/lib/types";
-import { useQuery } from "@/lib/use-query";
 import { useFocusEffect, router, type Href } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 function pickGreeting(greetings: string[], previous?: string) {
   if (greetings.length <= 1) return greetings[0] ?? "";
@@ -22,101 +18,78 @@ function pickGreeting(greetings: string[], previous?: string) {
   return next;
 }
 
-export default function DashboardScreen() {
+export default function ImpactScreen() {
   const { t } = useTranslation();
   const { ready, profile, snapshot, error, refresh } = useProfile();
-  const recipes = useQuery("dashboard-recipes", () => api.ideas({ kind: "kitchen", limit: 4 }));
 
   if (!ready) {
     return (
-      <Screen>
-        <DashboardHeader />
-        <LoadingState label={t("dashboard.loading")} />
-      </Screen>
+      <ImpactShell>
+        <LoadingState label={t("impact.loading")} />
+      </ImpactShell>
     );
   }
 
   if (!profile) {
     return (
-      <Screen>
-        <DashboardHeader />
+      <ImpactShell>
         <EmptyState
-          title={t("dashboard.pickNameTitle")}
-          body={t("dashboard.pickNameBody")}
+          title={t("impact.pickNameTitle")}
+          body={t("impact.pickNameBody")}
           icon="person-outline"
-          actionLabel={t("dashboard.openAccount")}
+          actionLabel={t("impact.openAccount")}
           onAction={() => router.push("/settings/account" as Href)}
         />
-        {recipes.status === "ready" && recipes.data ? <RecipePreview recipes={recipes.data.ideas} /> : null}
-        <View style={styles.ctaBlock}>
-          <Button label={t("dashboard.findItem")} onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
-        </View>
-      </Screen>
+      </ImpactShell>
     );
   }
 
   if (!snapshot && error) {
     return (
-      <Screen>
-        <DashboardHeader />
+      <ImpactShell>
         <ErrorState message={error} onRetry={() => refresh().catch(() => {})} />
-      </Screen>
+      </ImpactShell>
     );
   }
 
   if (!snapshot) {
     return (
-      <Screen>
-        <DashboardHeader />
-        <LoadingState label={t("dashboard.loading")} />
-      </Screen>
+      <ImpactShell>
+        <LoadingState label={t("impact.loading")} />
+      </ImpactShell>
     );
   }
 
   return (
-    <Screen>
-      <DashboardHeader />
+    <ImpactShell>
       <SummaryStrip snapshot={snapshot} />
       <ContributionGraph activity={snapshot.activity ?? []} />
       <ActionSplit reuses={snapshot.counts.reuses} disposals={snapshot.counts.disposals} />
       <CategoryBars rows={snapshot.byCategory ?? []} />
-      {recipes.status === "ready" && recipes.data ? <RecipePreview recipes={recipes.data.ideas} /> : null}
-      <View style={styles.ctaBlock}>
-        <Button label={t("dashboard.findItem")} onPress={() => router.push("/browse" as Href)} testID="cta-browse" />
-        <Button
-          label={t("dashboard.shareIdea")}
-          tone="secondary"
-          onPress={() => router.push(submitRoute({ mode: "idea" }))}
-          testID="cta-submit"
-        />
+    </ImpactShell>
+  );
+}
+
+function ImpactShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <Screen title={t("impact.title")} back>
+      <View style={styles.content} testID="impact-screen">
+        {children}
       </View>
     </Screen>
   );
 }
 
-function DashboardHeader() {
-  const { t } = useTranslation();
-  return (
-    <View style={styles.header} testID="dashboard-header">
-      <Image
-        source={require("../../assets/images/icon.png")}
-        style={styles.logo}
-        accessibilityLabel={t("dashboard.logo")}
-      />
-      <Text style={styles.mark}>{t("common.appName")}</Text>
-    </View>
-  );
-}
-
 function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
   const { t, i18n } = useTranslation();
-  const greetings = t("dashboard.greetings", { returnObjects: true }) as string[];
+  const greetings = t("impact.greetings", { returnObjects: true }) as string[];
   const list = Array.isArray(greetings) ? greetings : ["Hey"];
   const [greeting, setGreeting] = useState(() => pickGreeting(list));
   const firstFocus = useRef(true);
 
   useEffect(() => {
-    const nextList = t("dashboard.greetings", { returnObjects: true }) as string[];
+    const nextList = t("impact.greetings", { returnObjects: true }) as string[];
     setGreeting(pickGreeting(Array.isArray(nextList) ? nextList : ["Hey"]));
   }, [i18n.language, t]);
 
@@ -126,7 +99,7 @@ function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
         firstFocus.current = false;
         return;
       }
-      const nextList = t("dashboard.greetings", { returnObjects: true }) as string[];
+      const nextList = t("impact.greetings", { returnObjects: true }) as string[];
       const fallback = Array.isArray(nextList) ? nextList : ["Hey"];
       setGreeting((previous) => pickGreeting(fallback, previous));
     }, [t]),
@@ -139,9 +112,9 @@ function SummaryStrip({ snapshot }: { snapshot: ProfileSnapshot }) {
         <Text style={styles.hello}>{snapshot.displayName}</Text>
       </View>
       <View style={styles.counts}>
-        <Count label={t("dashboard.reuses")} value={snapshot.counts.reuses} />
-        <Count label={t("dashboard.disposals")} value={snapshot.counts.disposals} />
-        <Count label={t("dashboard.ideas")} value={snapshot.counts.ideasShared} />
+        <Count label={t("impact.reuses")} value={snapshot.counts.reuses} />
+        <Count label={t("impact.disposals")} value={snapshot.counts.disposals} />
+        <Count label={t("impact.ideas")} value={snapshot.counts.ideasShared} />
       </View>
     </View>
   );
@@ -164,9 +137,9 @@ function ActionSplit({ reuses, disposals }: { reuses: number; disposals: number 
 
   return (
     <View style={styles.chartBlock} testID="action-split-chart">
-      <Text style={styles.section}>{t("dashboard.reuseVsDispose")}</Text>
+      <Text style={styles.section}>{t("impact.reuseVsDispose")}</Text>
       <Text style={styles.chartNote}>
-        {total === 0 ? t("dashboard.splitEmpty") : t("dashboard.splitCounts", { reuses, disposals })}
+        {total === 0 ? t("impact.splitEmpty") : t("impact.splitCounts", { reuses, disposals })}
       </Text>
       <View style={styles.splitTrack}>
         {total === 0 ? (
@@ -179,8 +152,8 @@ function ActionSplit({ reuses, disposals }: { reuses: number; disposals: number 
         )}
       </View>
       <View style={styles.splitLegend}>
-        <LegendDot color={colors.green} label={t("dashboard.reuse")} />
-        <LegendDot color={colors.terra} label={t("dashboard.dispose")} />
+        <LegendDot color={colors.green} label={t("impact.reuse")} />
+        <LegendDot color={colors.terra} label={t("impact.dispose")} />
       </View>
     </View>
   );
@@ -192,9 +165,9 @@ function CategoryBars({ rows }: { rows: CategoryCount[] }) {
 
   return (
     <View style={styles.chartBlock} testID="category-chart">
-      <Text style={styles.section}>{t("dashboard.byMaterial")}</Text>
+      <Text style={styles.section}>{t("impact.byMaterial")}</Text>
       <Text style={styles.chartNote}>
-        {rows.length === 0 ? t("dashboard.categoriesEmpty") : t("dashboard.categoriesNote")}
+        {rows.length === 0 ? t("impact.categoriesEmpty") : t("impact.categoriesNote")}
       </Text>
       {rows.map((row) => {
         const accent = categoryAccent[row.id] ?? colors.green;
@@ -225,21 +198,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-  },
-  mark: {
-    fontFamily: serif,
-    fontSize: 32,
-    color: colors.ink,
-  },
+  content: { gap: 16 },
   summary: { gap: 12 },
   greeting: { color: colors.muted, fontSize: 15, fontWeight: "600" },
   hello: { fontFamily: serif, fontSize: 34, color: colors.ink, lineHeight: 38, marginTop: 2 },
@@ -284,5 +243,4 @@ const styles = StyleSheet.create({
   },
   barFill: { height: "100%", borderRadius: 6 },
   barValue: { width: 28, textAlign: "right", color: colors.muted, fontSize: 13, fontWeight: "700" },
-  ctaBlock: { gap: 10, marginTop: 4, marginBottom: 8 },
 });

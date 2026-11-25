@@ -55,9 +55,7 @@ export default function LogScreen() {
 
   return (
     <Screen title={t("log.title")}>
-      <Text style={styles.hello}>{snapshot.displayName}</Text>
-      <Text style={styles.points}>{snapshot.points}</Text>
-      <Text style={styles.pointsLabel}>{t("log.pointsOnPhone")}</Text>
+      <ImpactSummary name={snapshot.displayName} points={snapshot.points} />
       <Text style={styles.note}>{t("log.note")}</Text>
 
       <View style={styles.counts}>
@@ -80,6 +78,27 @@ export default function LogScreen() {
         snapshot.recent.map((entry) => <LogRow key={entry.id} entry={entry} />)
       )}
     </Screen>
+  );
+}
+
+function ImpactSummary({ name, points }: { name: string; points: number }) {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t("log.impactA11y", { name, points })}
+      onPress={() => router.push("/impact" as Href)}
+      testID="open-impact"
+      style={({ pressed }) => [styles.summary, pressed && styles.pressed, pointer]}
+    >
+      <Text style={styles.hello}>{name}</Text>
+      <Text style={styles.points}>{points}</Text>
+      <Text style={styles.pointsLabel}>{t("log.pointsOnPhone")}</Text>
+      <View style={styles.summaryLink}>
+        <Text style={styles.summaryLinkText}>{t("log.seeImpact")}</Text>
+        <Ionicons name="arrow-forward" size={16} color={colors.green} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -148,6 +167,24 @@ const styles = StyleSheet.create({
   points: { fontFamily: serif, fontSize: 64, color: colors.ink, lineHeight: 68 },
   pointsLabel: { color: colors.muted, marginTop: -4 },
   note: { color: colors.muted, fontSize: 13, lineHeight: 18 },
+  summary: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 16,
+    padding: 16,
+  },
+  summaryLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 4,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
+  summaryLinkText: { color: colors.green, fontSize: 15, fontWeight: "700" },
   counts: { flexDirection: "row", gap: 8 },
   count: {
     flex: 1,
