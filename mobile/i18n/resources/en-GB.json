@@ -11,7 +11,7 @@
     "points": "points",
     "item": "item",
     "items": "items",
-    "recycler": "Recycler"
+    "appName": "Againful"
   },
   "tabs": {
     "dashboard": "Dashboard",
@@ -46,7 +46,7 @@
     "memberSince": "Member since {{date}}",
     "setDisplayName": "Set a display name in Account",
     "openAccount": "Open Account",
-    "version": "Recycler v{{version}}",
+    "version": "Againful v{{version}}",
     "general": "General",
     "featureSettings": "Feature Settings",
     "appearance": "Appearance",
@@ -96,7 +96,7 @@
     "openAccount": "Open Account",
     "findItem": "Find an item",
     "shareIdea": "Share an idea",
-    "logo": "Recycler logo",
+    "logo": "Againful logo",
     "reuses": "Reuses",
     "disposals": "Disposals",
     "ideas": "Ideas",
@@ -217,7 +217,7 @@
     "disposeSection": "Rather just get rid of it",
     "generalPath": "General path for {{category}}, because this item has no disposal of its own.",
     "noDisposal": "No disposal guidance for this item yet.",
-    "disclaimer": "This is general guidance, not a map of local facilities. Rules differ by city, and Recycler does not ask where you live.",
+    "disclaimer": "This is general guidance, not a map of local facilities. Rules differ by city, and Againful does not ask where you live.",
     "sharedBy": "Shared by {{name}}",
     "youllNeed": "You’ll need",
     "picture": "{{name}} picture"
@@ -338,13 +338,13 @@
     "next": "Next",
     "getStarted": "Get started",
     "lookUpTitle": "Look up what you have",
-    "lookUpBody": "Search the catalog or pick a material. Recycler shows whether it can be reused, and a plain way to get rid of it if not.",
+    "lookUpBody": "Search the catalog or pick a material. Againful shows whether it can be reused, and a plain way to get rid of it if not.",
     "reuseFirstTitle": "Reuse before disposal",
     "reuseFirstBody": "Follow a cook, beauty, art, or useful idea. Disposal steps sit on the same page. Trash is the last stop, not the first.",
     "logActionsTitle": "Log it on this phone",
     "logActionsBody": "Record each reuse or disposal. No account and no password.",
     "keepGoingTitle": "Make it a habit",
-    "keepGoingBody": "Points and badges come from real actions, not carbon math. Recycler counts reuses, disposals, and ideas you share."
+    "keepGoingBody": "Points and badges come from real actions, not carbon math. Againful counts reuses, disposals, and ideas you share."
   },
   "method": {
     "recycle": "Rinse and recycle",
@@ -383,7 +383,7 @@
     "fri": "Fri"
   },
   "errors": {
-    "apiUnreachable": "Could not reach the Recycler API. Start the server and try again.",
+    "apiUnreachable": "Could not reach the Againful API. Start the server and try again.",
     "apiUnexpected": "The API returned something unexpected.",
     "somethingWrong": "Something went wrong.",
     "loadPoints": "Could not load your points.",

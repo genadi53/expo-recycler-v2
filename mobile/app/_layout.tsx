@@ -21,7 +21,7 @@ export default function RootLayout() {
         <ProfileProvider>
           <OnboardingGate>
             <Head>
-              <title>Recycler</title>
+              <title>Againful</title>
               <link rel="icon" href="/favicon.ico" type="image/x-icon" />
             </Head>
             <StatusBar style="dark" />
