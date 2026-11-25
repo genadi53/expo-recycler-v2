@@ -1,17 +1,17 @@
 import { Platform, type TextStyle } from "react-native";
 
 export const colors = {
-  stage: "#cfc6b8",
-  bg: "#f4efe6",
+  stage: "#86a57d",
+  bg: "#f7f3ea",
   card: "#fffdf8",
-  ink: "#1c1915",
-  muted: "#6f675c",
-  line: "#e4d9c8",
-  green: "#1e5c3f",
-  greenDark: "#143f2b",
-  greenSoft: "#e5f2ea",
+  ink: "#1f2a22",
+  muted: "#6b7466",
+  line: "#e3e8dc",
+  green: "#2e5a3f",
+  greenDark: "#1f4030",
+  greenSoft: "#cfe1cc",
   terra: "#a6532c",
-  terraSoft: "#f8ece4",
+  terraSoft: "#fbe3d5",
   danger: "#8d2f2a",
   dangerSoft: "#f8e8e4",
 };
