@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { ideasTableSql, migrateIdeaKinds } from "./migrateIdeaKinds.js";
 import { seedIfEmpty } from "./seed.js";
 
 export type DB = DatabaseSync;
@@ -32,18 +33,7 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE UNIQUE INDEX IF NOT EXISTS items_name_lower ON items(lower(name));
 
-CREATE TABLE IF NOT EXISTS ideas (
-  id TEXT PRIMARY KEY,
-  item_id TEXT NOT NULL REFERENCES items(id),
-  kind TEXT NOT NULL CHECK (kind IN ('cook', 'beauty', 'art', 'useful')),
-  title TEXT NOT NULL,
-  materials TEXT NOT NULL,
-  steps TEXT NOT NULL,
-  image_filename TEXT,
-  author_profile_id TEXT REFERENCES profiles(id),
-  status TEXT NOT NULL CHECK (status IN ('published', 'pending')),
-  created_at TEXT NOT NULL
-);
+${ideasTableSql("ideas", true)};
 
 CREATE TABLE IF NOT EXISTS disposals (
   id TEXT PRIMARY KEY,
@@ -137,10 +127,17 @@ export function openDatabase(file = process.env.DATABASE_PATH ?? path.join(proce
   if (file !== ":memory:") {
     db.exec("PRAGMA journal_mode = WAL");
   }
-  db.exec(SCHEMA);
-  migrateIdeasImageColumn(db);
-  migrateItemsImageColumn(db);
-  seedIfEmpty(db);
+  try {
+    db.exec(SCHEMA);
+    // Order matters: additive column migrations first, so the idea-kinds rebuild sees every column.
+    migrateIdeasImageColumn(db);
+    migrateItemsImageColumn(db);
+    migrateIdeaKinds(db, file);
+    seedIfEmpty(db);
+  } catch (error) {
+    db.close();
+    throw error;
+  }
   return db;
 }
 

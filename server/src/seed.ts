@@ -141,7 +141,7 @@ const ITEMS: SeedItem[] = [
     summary: "Sweet peels with enough flavor left for a pan and a little moisture for dry hands.",
     ideas: [
       {
-        kind: "cook",
+        kind: "kitchen",
         title: "Banana peel bacon",
         materials: "2 ripe banana peels\n1 tbsp soy sauce\n1 tsp maple syrup or honey\n1/2 tsp smoked paprika\n1/4 tsp garlic powder\nA little oil",
         steps: [
@@ -190,7 +190,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "cook",
+        kind: "kitchen",
         title: "Savory coffee rub",
         materials: "1 tbsp dried used coffee, finely crushed\n1 tsp salt\n1 tsp brown sugar\n1/2 tsp black pepper",
         steps: [
@@ -218,7 +218,7 @@ const ITEMS: SeedItem[] = [
     summary: "Orange, lemon, and lime peels still carry oil, scent, and a little bitterness worth keeping.",
     ideas: [
       {
-        kind: "cook",
+        kind: "kitchen",
         title: "Candied citrus peel",
         materials: "Peels from 2 oranges or lemons\n1 cup sugar\n1 cup water\nA pinch of salt",
         steps: [
@@ -256,7 +256,7 @@ const ITEMS: SeedItem[] = [
     summary: "Rinsed shells are mostly calcium, useful in stock and as a very fine scrub once baked.",
     ideas: [
       {
-        kind: "cook",
+        kind: "kitchen",
         title: "Shells in the stock pot",
         materials: "Shells from 4–6 eggs, rinsed\nVegetable scraps or a stock you are already making",
         steps: [
@@ -294,7 +294,7 @@ const ITEMS: SeedItem[] = [
     summary: "Dry bread is already halfway to croutons or pudding. Mold is the line where it stops being food.",
     ideas: [
       {
-        kind: "cook",
+        kind: "kitchen",
         title: "Skillet croutons",
         materials: "2 cups stale bread, torn\n1 tbsp oil\nA pinch of salt\nDried herbs you already have",
         steps: [
@@ -304,7 +304,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "cook",
+        kind: "kitchen",
         title: "Stale-bread pudding",
         materials: "3 cups cubed stale bread\n2 eggs\n1 1/2 cups milk\n2 tbsp sugar\n1 tsp vanilla, if you have it",
         steps: [
@@ -332,7 +332,7 @@ const ITEMS: SeedItem[] = [
     summary: "Ends, peels, and stems from a week of cooking make a pot of broth.",
     ideas: [
       {
-        kind: "cook",
+        kind: "kitchen",
         title: "Scrap broth",
         materials: "4 cups clean vegetable scraps\nOnion ends, carrot peels, celery leaves, herb stems\n8 cups water\nSalt",
         steps: [
@@ -360,7 +360,7 @@ const ITEMS: SeedItem[] = [
     summary: "Clear drink bottles, usually marked PET or #1, that cut into a funnel or a planter.",
     ideas: [
       {
-        kind: "useful",
+        kind: "home",
         title: "Funnel from the neck",
         materials: "1 clean PET bottle\nScissors\nTape to cover the cut edge",
         steps: [
@@ -370,7 +370,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "art",
+        kind: "crafts",
         title: "Hanging bottle planter",
         materials: "1 PET bottle\nString\nA nail\nPotting mix and a cutting or seed",
         steps: [
@@ -398,7 +398,7 @@ const ITEMS: SeedItem[] = [
     summary: "Soft film bags that clog curbside bins and still work as packing material or a braided basket.",
     ideas: [
       {
-        kind: "useful",
+        kind: "home",
         title: "Packing cushions",
         materials: "Clean, dry plastic bags",
         steps: [
@@ -408,7 +408,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "art",
+        kind: "crafts",
         title: "Braided bag basket",
         materials: "About 10 clean plastic bags\nScissors",
         steps: [
@@ -436,7 +436,7 @@ const ITEMS: SeedItem[] = [
     summary: "Small rinsed tubs that start seeds or hold paint and paper clips.",
     ideas: [
       {
-        kind: "useful",
+        kind: "garden",
         title: "Seed-starting pots",
         materials: "Clean yogurt cups\nA nail\nSeed-starting mix\nSeeds",
         steps: [
@@ -446,7 +446,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "art",
+        kind: "crafts",
         title: "Painted desk cups",
         materials: "Clean yogurt cups\nAcrylic paint or leftover nail polish\nPaper clips, pins, or cotton swabs",
         steps: [
@@ -474,7 +474,7 @@ const ITEMS: SeedItem[] = [
     summary: "Light drink cans that become a lantern or a small cup once the edge is made safe.",
     ideas: [
       {
-        kind: "art",
+        kind: "crafts",
         title: "Punched-can lantern",
         materials: "1 empty aluminum can\nA nail\nA hammer\nA tea light\nTape",
         steps: [
@@ -484,7 +484,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "useful",
+        kind: "home",
         title: "Workshop parts cup",
         materials: "1 aluminum can\nTape or a file\nScissors that can cut thin metal",
         steps: [
@@ -512,7 +512,7 @@ const ITEMS: SeedItem[] = [
     summary: "Food cans sturdy enough for utensils or a painted holder, after the lid is dealt with safely.",
     ideas: [
       {
-        kind: "useful",
+        kind: "home",
         title: "Utensil crock",
         materials: "1 large food can\nTape\nSoap",
         steps: [
@@ -522,7 +522,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "art",
+        kind: "crafts",
         title: "Painted desk caddy",
         materials: "2 or 3 clean food cans\nTape\nAcrylic paint\nStrong glue",
         steps: [
@@ -550,7 +550,7 @@ const ITEMS: SeedItem[] = [
     summary: "A jar with its lid is already a container. Washed and dried, it stores food or becomes a lantern.",
     ideas: [
       {
-        kind: "useful",
+        kind: "home",
         title: "Pantry jar",
         materials: "A glass jar with a lid\nHot water and soap\nA label",
         steps: [
@@ -560,7 +560,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "art",
+        kind: "crafts",
         title: "Painted votive",
         materials: "A clean glass jar\nGlass paint or tissue paper and glue\nA tea light or LED candle",
         steps: [
@@ -588,7 +588,7 @@ const ITEMS: SeedItem[] = [
     summary: "Clean corrugated boxes that fold into desk trays or lie flat under mulch.",
     ideas: [
       {
-        kind: "art",
+        kind: "crafts",
         title: "Desk organizer",
         materials: "1 clean cardboard box\nA ruler\nA knife or scissors\nGlue",
         steps: [
@@ -598,7 +598,7 @@ const ITEMS: SeedItem[] = [
         ],
       },
       {
-        kind: "useful",
+        kind: "garden",
         title: "Sheet mulch",
         materials: "Plain brown cardboard\nWater",
         steps: [

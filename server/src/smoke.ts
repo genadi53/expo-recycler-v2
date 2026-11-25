@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { createApp } from "./app.js";
 import { ensureImagesDir, openDatabase } from "./db.js";
 
@@ -95,7 +96,7 @@ const blankSteps = await app.request("/submissions", {
     profileId: "person-1",
     category: "food",
     itemName: "Orange pith",
-    ideaKind: "cook",
+    ideaKind: "kitchen",
     title: "Pith tea",
     materials: "Pith",
     steps: "   ",
@@ -147,14 +148,53 @@ for (const itemId of ["citrus-peels", "eggshells", "pet-bottles", "aluminum-cans
   );
 }
 
-const recipes = await json<{ ideas: { id: string; kind: string; title: string; itemId: string; itemName: string }[] }>(
-  await app.request("/ideas?kind=cook&limit=4"),
-);
-assert(recipes.ideas.length === 4, `expected 4 cook recipes, got ${recipes.ideas.length}`);
-assert(recipes.ideas.every((idea) => idea.kind === "cook" && idea.itemId && idea.title), "recipe fields missing");
+type IdeaListing = { ideas: { id: string; kind: string; title: string; itemId: string; itemName: string }[] };
+const NEW_KINDS = ["kitchen", "beauty", "cleaning", "garden", "home", "crafts"];
+
+const recipes = await json<IdeaListing>(await app.request("/ideas?kind=kitchen&limit=4"));
+assert(recipes.ideas.length === 4, `expected 4 kitchen recipes, got ${recipes.ideas.length}`);
+assert(recipes.ideas.every((idea) => idea.kind === "kitchen" && idea.itemId && idea.title), "recipe fields missing");
+
+const allIdeas = await json<IdeaListing>(await app.request("/ideas"));
+assert(allIdeas.ideas.length > 0, "unfiltered ideas should not be empty");
+assert(allIdeas.ideas.every((idea) => NEW_KINDS.includes(idea.kind)), "every idea should carry a new kind");
+
+const gardenIdeas = await json<IdeaListing>(await app.request("/ideas?kind=garden"));
+for (const title of ["Seed-starting pots", "Sheet mulch"]) {
+  assert(gardenIdeas.ideas.some((idea) => idea.title === title), `garden should include ${title}`);
+}
+assert(gardenIdeas.ideas.every((idea) => idea.kind === "garden"), "garden filter should only return garden");
+
+const cleaningRes = await app.request("/ideas?kind=cleaning");
+assert(cleaningRes.status === 200, "cleaning should be a valid kind");
+const cleaningIdeas = await json<IdeaListing>(cleaningRes);
+assert(cleaningIdeas.ideas.length === 0, "cleaning launches empty");
+
+const idsOf = async (query: string) =>
+  (await json<IdeaListing>(await app.request(`/ideas?${query}`))).ideas.map((idea) => idea.id).sort();
+const sameIds = (a: string[], b: string[]) => a.length === b.length && a.every((id, index) => id === b[index]);
+
+const kitchenIds = await idsOf("kind=kitchen");
+assert(kitchenIds.length >= 4, "expected at least 4 kitchen ideas");
+assert(sameIds(await idsOf("kind=cook"), kitchenIds), "kind=cook should alias kind=kitchen");
+assert(sameIds(await idsOf("kind=art"), await idsOf("kind=crafts")), "kind=art should alias kind=crafts");
+const usefulUnion = [
+  ...(await idsOf("kind=cleaning")),
+  ...(await idsOf("kind=garden")),
+  ...(await idsOf("kind=home")),
+].sort();
+assert(usefulUnion.length > 0, "cleaning + garden + home should not be empty");
+assert(sameIds(await idsOf("kind=useful"), usefulUnion), "kind=useful should be cleaning + garden + home");
+const aliasKinds = await json<IdeaListing>(await app.request("/ideas?kind=cook"));
+assert(aliasKinds.ideas.every((idea) => idea.kind === "kitchen"), "alias responses should carry new ids");
 
 const badKind = await app.request("/ideas?kind=snack");
 assert(badKind.status === 400, "bad idea kind should 400");
+const badKindBody = (await badKind.json()) as { error?: string };
+assert(
+  badKindBody.error === "Pick a kind: kitchen, beauty, cleaning, garden, home, or crafts.",
+  `bad kind message should list the new kinds, got ${badKindBody.error}`,
+);
 
 const afterLogs = await json<{
   points: number;
@@ -204,11 +244,12 @@ assert(attached.pointsAwarded === 15, "existing idea should be 15 points");
 assert(attached.badgesUnlocked.some((badge) => badge.slug === "contributor"), "contributor badge missing");
 assert(attached.idea.imageUrl?.startsWith("/idea-images/") && attached.idea.imageUrl.endsWith(".png"), "idea imageUrl missing");
 
-const withPicture = await json<{ ideas: { title: string; imageUrl: string | null }[] }>(
+const withPicture = await json<{ ideas: { title: string; kind: string; imageUrl: string | null }[] }>(
   await app.request("/items/banana-peels"),
 );
 const pictured = withPicture.ideas.find((idea) => idea.title === "Peel vinegar");
 assert(pictured?.imageUrl === attached.idea.imageUrl, "item detail should include idea imageUrl");
+assert(pictured?.kind === "kitchen", `ideaKind cook should be stored as kitchen, got ${pictured?.kind}`);
 
 const imageRes = await app.request(attached.idea.imageUrl!);
 assert(imageRes.status === 200, "idea image should be served");
@@ -317,6 +358,46 @@ await json(
     }),
   }),
 );
+await json(
+  await app.request("/submissions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      profileId: "person-1",
+      category: "other",
+      itemName: "Wine corks",
+      ideaKind: "garden",
+      title: "Cork mulch",
+      materials: "Natural corks",
+      steps: "Chop natural corks and spread them around potted plants.",
+    }),
+  }),
+);
+const snackKind = await app.request("/submissions", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    profileId: "person-1",
+    category: "other",
+    itemName: "Wine corks",
+    ideaKind: "snack",
+    title: "Cork snack",
+    materials: "Corks",
+    steps: "Do not eat corks.",
+  }),
+});
+assert(snackKind.status === 400, "unknown ideaKind should 400");
+const snackBody = (await snackKind.json()) as { error?: string };
+assert(
+  snackBody.error === "Pick a kind: kitchen, beauty, cleaning, garden, home, or crafts.",
+  `unknown ideaKind message should list the new kinds, got ${snackBody.error}`,
+);
+const corkKinds = await json<{ ideas: { title: string; kind: string }[] }>(await app.request(`/items/${fresh.item.id}`));
+const corkKind = (title: string) => corkKinds.ideas.find((idea) => idea.title === title)?.kind;
+assert(corkKind("Cork trivet") === "crafts", `ideaKind art should be stored as crafts, got ${corkKind("Cork trivet")}`);
+assert(corkKind("Kindling") === "home", `ideaKind useful should be stored as home, got ${corkKind("Kindling")}`);
+assert(corkKind("Cork mulch") === "garden", `ideaKind garden should be stored as garden, got ${corkKind("Cork mulch")}`);
+
 const gardened = await json<{ badges: { slug: string; unlockedAt: string | null }[] }>(
   await app.request("/profiles/person-1"),
 );
@@ -333,5 +414,242 @@ db.prepare(
 ).run("bare-peel", "Bare peel", new Date().toISOString());
 const fallback = await json<{ disposal: { source: string; method: string } | null }>(await app.request("/items/bare-peel"));
 assert(fallback.disposal?.source === "category" && fallback.disposal.method === "compost", "category fallback missing");
+
+// --- Idea-kinds migration from an old-schema database ---------------------------------------
+
+const OLD_IDEAS_SQL = (withImageColumn: boolean) => `
+CREATE TABLE ideas (
+  id TEXT PRIMARY KEY,
+  item_id TEXT NOT NULL REFERENCES items(id),
+  kind TEXT NOT NULL CHECK (kind IN ('cook', 'beauty', 'art', 'useful')),
+  title TEXT NOT NULL,
+  materials TEXT NOT NULL,
+  steps TEXT NOT NULL,
+  author_profile_id TEXT REFERENCES profiles(id),
+  status TEXT NOT NULL CHECK (status IN ('published', 'pending')),
+  created_at TEXT NOT NULL
+)${withImageColumn ? ";\nALTER TABLE ideas ADD COLUMN image_filename TEXT" : ""};`;
+
+const OLD_BASE_SQL = `
+CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL);
+CREATE TABLE profiles (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, points INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+CREATE TABLE items (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  aliases TEXT NOT NULL DEFAULT '[]',
+  category_id TEXT NOT NULL REFERENCES categories(id),
+  summary TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('published', 'pending')),
+  created_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX items_name_lower ON items(lower(name));
+`;
+
+const OLD_LOG_SQL = `
+CREATE TABLE log_entries (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  item_id TEXT NOT NULL REFERENCES items(id),
+  action TEXT NOT NULL CHECK (action IN ('reuse', 'dispose')),
+  idea_id TEXT REFERENCES ideas(id),
+  disposal_method TEXT,
+  points_awarded INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+`;
+
+// [idea id, item id, old kind, expected new kind]. Covers every seeded `useful` override.
+const OLD_SEEDED: [string, string, string, string][] = [
+  ["banana-peels-idea-1", "banana-peels", "cook", "kitchen"],
+  ["banana-peels-idea-2", "banana-peels", "beauty", "beauty"],
+  ["pet-bottles-idea-1", "pet-bottles", "useful", "home"],
+  ["pet-bottles-idea-2", "pet-bottles", "art", "crafts"],
+  ["plastic-bags-idea-1", "plastic-bags", "useful", "home"],
+  ["plastic-bags-idea-2", "plastic-bags", "art", "crafts"],
+  ["yogurt-cups-idea-1", "yogurt-cups", "useful", "garden"],
+  ["yogurt-cups-idea-2", "yogurt-cups", "art", "crafts"],
+  ["aluminum-cans-idea-1", "aluminum-cans", "art", "crafts"],
+  ["aluminum-cans-idea-2", "aluminum-cans", "useful", "home"],
+  ["tin-cans-idea-1", "tin-cans", "useful", "home"],
+  ["tin-cans-idea-2", "tin-cans", "art", "crafts"],
+  ["glass-jars-idea-1", "glass-jars", "useful", "home"],
+  ["glass-jars-idea-2", "glass-jars", "art", "crafts"],
+  ["cardboard-idea-1", "cardboard", "art", "crafts"],
+  ["cardboard-idea-2", "cardboard", "useful", "garden"],
+];
+// User submissions with random ids: one per old kind. The `useful` one falls back to home.
+const OLD_SUBMITTED: [string, string, string, string][] = [
+  ["5f0c9a1e-0000-4000-8000-000000000001", "banana-peels", "cook", "kitchen"],
+  ["5f0c9a1e-0000-4000-8000-000000000002", "glass-jars", "beauty", "beauty"],
+  ["5f0c9a1e-0000-4000-8000-000000000003", "cardboard", "art", "crafts"],
+  ["5f0c9a1e-0000-4000-8000-000000000004", "tin-cans", "useful", "home"],
+];
+const OLD_ALL = [...OLD_SEEDED, ...OLD_SUBMITTED];
+const PICTURED_IDEA_ID = OLD_SUBMITTED[3][0];
+
+type OldDbOptions = { withImageColumn: boolean; badKind?: string };
+
+function buildOldDatabase(dir: string, options: OldDbOptions): string {
+  const file = path.join(dir, "recycler.db");
+  const old = new DatabaseSync(file);
+  old.exec("PRAGMA foreign_keys = ON");
+  old.exec(OLD_BASE_SQL + OLD_IDEAS_SQL(options.withImageColumn) + OLD_LOG_SQL);
+  old.exec("INSERT INTO categories VALUES ('food', 'Food', 'Food'), ('plastic', 'Plastic', 'Plastic')");
+  for (const itemId of new Set(OLD_ALL.map(([, itemId]) => itemId))) {
+    old
+      .prepare("INSERT INTO items (id, name, category_id, summary, status, created_at) VALUES (?, ?, ?, ?, 'published', ?)")
+      .run(itemId, itemId, itemId === "banana-peels" ? "food" : "plastic", `${itemId} summary`, "2026-01-01T00:00:00.000Z");
+  }
+  old.exec("INSERT INTO profiles VALUES ('maker-1', 'Old Maker', 40, '2026-02-01T00:00:00.000Z')");
+  // Insert in reverse so rowid order differs from id order.
+  [...OLD_ALL].reverse().forEach(([id, itemId, kind], index) => {
+    const submitted = OLD_SUBMITTED.some(([submittedId]) => submittedId === id);
+    old
+      .prepare(
+        `INSERT INTO ideas (id, item_id, kind, title, materials, steps, author_profile_id, status, created_at)
+         VALUES (?, ?, ?, ?, 'Stuff', '["Do it."]', ?, 'published', ?)`,
+      )
+      .run(
+        id,
+        itemId,
+        kind,
+        `Idea ${index}`,
+        submitted ? "maker-1" : null,
+        submitted ? "2026-03-01T00:00:00.000Z" : "2026-01-01T00:00:00.000Z",
+      );
+  });
+  if (options.withImageColumn) {
+    old.prepare("UPDATE ideas SET image_filename = ? WHERE id = ?").run(`${PICTURED_IDEA_ID}.png`, PICTURED_IDEA_ID);
+  }
+  if (options.badKind) {
+    // A value the new CHECK rejects and no remap covers; slipped past the old CHECK on purpose.
+    old.exec("PRAGMA ignore_check_constraints = ON");
+    old
+      .prepare(
+        `INSERT INTO ideas (id, item_id, kind, title, materials, steps, status, created_at)
+         VALUES ('bad-idea', 'cardboard', ?, 'Bad', 'x', '[]', 'published', '2026-01-01T00:00:00.000Z')`,
+      )
+      .run(options.badKind);
+    old.exec("PRAGMA ignore_check_constraints = OFF");
+  }
+  const logIdeas = [OLD_SEEDED[0], OLD_SEEDED[6], OLD_SEEDED[15], OLD_SUBMITTED[0], OLD_SUBMITTED[3]];
+  logIdeas.forEach(([ideaId, itemId], index) => {
+    old
+      .prepare(
+        `INSERT INTO log_entries (id, profile_id, item_id, action, idea_id, points_awarded, created_at)
+         VALUES (?, 'maker-1', ?, 'reuse', ?, 10, ?)`,
+      )
+      .run(`log-${index}`, itemId, ideaId, `2026-04-0${index + 1}T00:00:00.000Z`);
+  });
+  old.close();
+  return file;
+}
+
+const backupsIn = (dir: string) => fs.readdirSync(dir).filter((name) => /^recycler\.pre-idea-kinds-.*\.db$/.test(name));
+const ideasSql = (target: DatabaseSync) =>
+  (target.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'ideas'").get() as { sql: string }).sql;
+const ideaRows = (target: DatabaseSync) => JSON.stringify(target.prepare("SELECT rowid, * FROM ideas ORDER BY rowid").all());
+const ideaCount = (target: DatabaseSync) =>
+  Number((target.prepare("SELECT COUNT(*) AS n FROM ideas").get() as { n: number }).n);
+
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "recycler-migrate-"));
+  const file = buildOldDatabase(dir, { withImageColumn: true });
+  const before = new DatabaseSync(file);
+  const rowidsBefore = JSON.stringify(before.prepare("SELECT rowid, id FROM ideas ORDER BY rowid").all());
+  const countBefore = ideaCount(before);
+  before.close();
+
+  const migrated = openDatabase(file);
+  const sql = ideasSql(migrated);
+  for (const kind of NEW_KINDS) assert(sql.includes(`'${kind}'`), `migrated ideas CHECK should list ${kind}`);
+  assert(!sql.includes("'cook'") && !sql.includes("'useful'"), "migrated ideas CHECK should drop the old kinds");
+  assert(ideaCount(migrated) === countBefore, `row count changed: ${countBefore} -> ${ideaCount(migrated)}`);
+  assert(
+    JSON.stringify(migrated.prepare("SELECT rowid, id FROM ideas ORDER BY rowid").all()) === rowidsBefore,
+    "ids and rowid order should be preserved",
+  );
+  for (const [id, , oldKind, expected] of OLD_ALL) {
+    const row = migrated.prepare("SELECT kind FROM ideas WHERE id = ?").get(id) as { kind: string } | undefined;
+    assert(row?.kind === expected, `${id} (${oldKind}) should become ${expected}, got ${row?.kind}`);
+  }
+  const pictured = migrated.prepare("SELECT image_filename FROM ideas WHERE id = ?").get(PICTURED_IDEA_ID) as {
+    image_filename: string | null;
+  };
+  assert(pictured.image_filename === `${PICTURED_IDEA_ID}.png`, "image_filename should be preserved");
+  const joined = migrated
+    .prepare("SELECT COUNT(*) AS n FROM log_entries JOIN ideas ON ideas.id = log_entries.idea_id")
+    .get() as { n: number };
+  assert(Number(joined.n) === 5, `log entries should still join to their ideas, got ${joined.n}`);
+  assert(migrated.prepare("PRAGMA foreign_key_check").all().length === 0, "foreign_key_check should be empty");
+  const fkOn = migrated.prepare("PRAGMA foreign_keys").get() as { foreign_keys: number };
+  assert(Number(fkOn.foreign_keys) === 1, "foreign keys should be re-enabled after the migration");
+  assert(backupsIn(dir).length === 1, `expected one backup beside the database, got ${backupsIn(dir).length}`);
+  const backup = new DatabaseSync(path.join(dir, backupsIn(dir)[0]), { readOnly: true });
+  assert(ideasSql(backup).includes("'cook'"), "backup should hold the pre-migration schema");
+  assert(ideaCount(backup) === countBefore, "backup should hold every pre-migration idea");
+  backup.close();
+
+  const migratedImages = ensureImagesDir(path.join(dir, "idea-images"));
+  fs.writeFileSync(path.join(migratedImages, `${PICTURED_IDEA_ID}.png`), Buffer.from(TINY_PNG_BASE64, "base64"));
+  const migratedApp = createApp(migrated, migratedImages, ensureImagesDir(path.join(dir, "item-images")));
+  const tinCans = await json<{ ideas: { id: string; kind: string; imageUrl: string | null }[] }>(
+    await migratedApp.request("/items/tin-cans"),
+  );
+  const picturedIdea = tinCans.ideas.find((idea) => idea.id === PICTURED_IDEA_ID);
+  assert(picturedIdea?.kind === "home" && picturedIdea.imageUrl, "migrated idea should keep its imageUrl");
+  const migratedImage = await migratedApp.request(picturedIdea.imageUrl);
+  assert(migratedImage.status === 200, "migrated idea image should still resolve");
+  const migratedCook = await json<IdeaListing>(await migratedApp.request("/ideas?kind=cook"));
+  assert(
+    migratedCook.ideas.length === 2 && migratedCook.ideas.every((idea) => idea.kind === "kitchen"),
+    `kind=cook should list the migrated kitchen ideas, got ${migratedCook.ideas.length}`,
+  );
+  const rowsAfterFirst = ideaRows(migrated);
+  migrated.close();
+
+  const reopened = openDatabase(file);
+  assert(backupsIn(dir).length === 1, "second open should not write another backup");
+  assert(ideaRows(reopened) === rowsAfterFirst, "second open should leave ideas unchanged");
+  reopened.close();
+}
+
+{
+  // An old database from before the image column also migrates (the column migration runs first).
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "recycler-migrate-noimage-"));
+  const migrated = openDatabase(buildOldDatabase(dir, { withImageColumn: false }));
+  const columns = (migrated.prepare("PRAGMA table_info(ideas)").all() as { name: string }[]).map((column) => column.name);
+  assert(columns.includes("image_filename"), "migrated ideas should have image_filename");
+  assert(ideasSql(migrated).includes("'kitchen'"), "imageless old database should migrate");
+  for (const [id, , , expected] of OLD_ALL) {
+    const row = migrated.prepare("SELECT kind FROM ideas WHERE id = ?").get(id) as { kind: string } | undefined;
+    assert(row?.kind === expected, `imageless: ${id} should become ${expected}, got ${row?.kind}`);
+  }
+  migrated.close();
+}
+
+{
+  // A row the new CHECK rejects aborts the rebuild and leaves the old table and rows intact.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "recycler-migrate-fail-"));
+  const file = buildOldDatabase(dir, { withImageColumn: true, badKind: "snack" });
+  const before = new DatabaseSync(file);
+  const rowsBefore = ideaRows(before);
+  before.close();
+  let failure = "";
+  try {
+    openDatabase(file);
+  } catch (error) {
+    failure = String(error);
+  }
+  assert(/CHECK constraint/i.test(failure), `migration with an unmappable kind should throw a CHECK error, got ${failure}`);
+  const after = new DatabaseSync(file);
+  assert(ideasSql(after).includes("'cook'"), "failed migration should keep the old ideas table");
+  assert(ideaRows(after) === rowsBefore, "failed migration should leave idea rows untouched");
+  assert(
+    after.prepare("SELECT name FROM sqlite_master WHERE name = 'ideas_new'").all().length === 0,
+    "failed migration should not leave ideas_new behind",
+  );
+  after.close();
+}
 
 console.log("API smoke test passed");
