@@ -1,3 +1,4 @@
+import type { IdeaKind } from "@/lib/types";
 import type { Href } from "expo-router";
 
 /** Build a submit URL that always forces a fresh form (clears a stale success screen). */
@@ -5,7 +6,7 @@ export function submitRoute(options: {
   mode: "item" | "idea";
   item?: string;
   category?: string;
-  kind?: string;
+  kind?: IdeaKind;
 }): Href {
   const search = new URLSearchParams({
     mode: options.mode,

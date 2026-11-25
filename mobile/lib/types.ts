@@ -14,9 +14,13 @@ export type ItemSummary = {
   imageUrl: string | null;
 };
 
+/** Idea kinds (the six Againful brand categories), in display order. Mirrors the server's IDEA_KINDS. */
+export const IDEA_KINDS = ["kitchen", "beauty", "cleaning", "garden", "home", "crafts"] as const;
+export type IdeaKind = (typeof IDEA_KINDS)[number];
+
 export type Idea = {
   id: string;
-  kind: "cook" | "beauty" | "art" | "useful";
+  kind: IdeaKind;
   title: string;
   materials: string;
   steps: string[];

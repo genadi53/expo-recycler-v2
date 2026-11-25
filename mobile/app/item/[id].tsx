@@ -1,8 +1,9 @@
+import { IdeaKindLabel } from "@/components/idea-kind-label";
 import { LogAction } from "@/components/log-action";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { ErrorState, LoadingState, Screen } from "@/components/ui";
 import { absoluteApiUrl, api } from "@/lib/api";
-import { categoryLabel, kindLabel } from "@/lib/format";
+import { categoryLabel } from "@/lib/format";
 import type { Idea } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { useLocalSearchParams } from "expo-router";
@@ -95,7 +96,7 @@ function IdeaCard({ idea }: { idea: Idea }) {
           accessibilityLabel={t("item.picture", { name: idea.title })}
         />
       ) : null}
-      <Text style={styles.kind}>{kindLabel(idea.kind)}</Text>
+      <IdeaKindLabel kind={idea.kind} style={styles.kind} />
       <Text style={styles.cardTitle}>{idea.title}</Text>
       {idea.authorName ? <Text style={styles.meta}>{t("item.sharedBy", { name: idea.authorName })}</Text> : null}
       <Text style={styles.meta}>{t("item.youllNeed")}</Text>

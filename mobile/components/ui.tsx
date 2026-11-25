@@ -151,11 +151,16 @@ export function Chip({
   selected,
   onPress,
   testID,
+  icon,
+  iconColor,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   testID?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Icon colour while unselected; a selected chip uses its text colour. */
+  iconColor?: string;
 }) {
   return (
     <Pressable
@@ -164,8 +169,9 @@ export function Chip({
       accessibilityLabel={label}
       testID={testID}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipOn, pointer]}
+      style={[styles.chip, icon && styles.chipWithIcon, selected && styles.chipOn, pointer]}
     >
+      {icon ? <Ionicons name={icon} size={16} color={selected ? colors.card : (iconColor ?? colors.ink)} /> : null}
       <Text style={[styles.chipText, selected && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
@@ -325,6 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  chipWithIcon: { flexDirection: "row", alignItems: "center", gap: 6 },
   chipOn: { backgroundColor: colors.green, borderColor: colors.green },
   chipText: { color: colors.ink, fontWeight: "600" },
   chipTextOn: { color: "#fffdf8" },

@@ -2,6 +2,7 @@ import i18n from "@/i18n";
 import type {
   Category,
   IdeaImagePayload,
+  IdeaKind,
   IdeaSummary,
   ItemDetail,
   ItemSummary,
@@ -68,7 +69,7 @@ export const api = {
     return request<{ items: ItemSummary[] }>(`/items${query ? `?${query}` : ""}`);
   },
   item: (id: string) => request<ItemDetail>(`/items/${encodeURIComponent(id)}`),
-  ideas: (params: { kind?: string; limit?: number } = {}) => {
+  ideas: (params: { kind?: IdeaKind; limit?: number } = {}) => {
     const search = new URLSearchParams();
     if (params.kind) search.set("kind", params.kind);
     if (params.limit) search.set("limit", String(params.limit));
@@ -89,7 +90,7 @@ export const api = {
     profileId: string;
     category: string;
     itemName: string;
-    ideaKind?: string;
+    ideaKind?: IdeaKind;
     title?: string;
     materials?: string;
     steps?: string;
