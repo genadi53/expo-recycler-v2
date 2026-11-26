@@ -1,12 +1,5 @@
 import type { DB } from "./db.js";
-import { BADGES, type DisposalMethod, type IdeaKind } from "./rules.js";
-
-type SeedIdea = {
-  kind: IdeaKind;
-  title: string;
-  materials: string;
-  steps: string[];
-};
+import { BADGES, type DisposalMethod } from "./rules.js";
 
 type SeedDisposal = {
   method: DisposalMethod;
@@ -20,7 +13,6 @@ type SeedItem = {
   aliases: string[];
   categoryId: string;
   summary: string;
-  ideas: SeedIdea[];
   disposal: SeedDisposal;
 };
 
@@ -139,29 +131,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["banana peel", "banana skin"],
     categoryId: "food",
     summary: "Sweet peels with enough flavor left for a pan and a little moisture for dry hands.",
-    ideas: [
-      {
-        kind: "kitchen",
-        title: "Banana peel bacon",
-        materials: "2 ripe banana peels\n1 tbsp soy sauce\n1 tsp maple syrup or honey\n1/2 tsp smoked paprika\n1/4 tsp garlic powder\nA little oil",
-        steps: [
-          "Scrape away the white pith so the peels can crisp.",
-          "Toss them with soy sauce, syrup, paprika, and garlic.",
-          "Pan-fry in a little oil until browned and chewy.",
-          "Use them in a sandwich or next to eggs.",
-        ],
-      },
-      {
-        kind: "beauty",
-        title: "Peel rub for dry hands",
-        materials: "Inside of a fresh banana peel",
-        steps: [
-          "Rub the inside of the peel over clean, dry hands for about a minute.",
-          "Wait ten minutes.",
-          "Rinse, then use your usual moisturizer.",
-        ],
-      },
-    ],
     disposal: {
       method: "compost",
       title: "Compost",
@@ -178,28 +147,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["used coffee", "coffee grounds", "leftover coffee"],
     categoryId: "food",
     summary: "Used grounds still scrub, season, and feed a compost pile.",
-    ideas: [
-      {
-        kind: "beauty",
-        title: "Coffee body scrub",
-        materials: "1/2 cup used coffee grounds\n2 tbsp coconut or olive oil",
-        steps: [
-          "Mix cool, used grounds with the oil.",
-          "Massage onto damp arms or legs in the shower, then rinse.",
-          "Skip the face. Grounds are too coarse for it.",
-        ],
-      },
-      {
-        kind: "kitchen",
-        title: "Savory coffee rub",
-        materials: "1 tbsp dried used coffee, finely crushed\n1 tsp salt\n1 tsp brown sugar\n1/2 tsp black pepper",
-        steps: [
-          "Dry the grounds in a low oven until they crumble.",
-          "Mix them with salt, sugar, and pepper.",
-          "Pat the rub on mushrooms or tofu and roast until browned.",
-        ],
-      },
-    ],
     disposal: {
       method: "compost",
       title: "Compost",
@@ -216,28 +163,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["orange peel", "lemon peel", "lime peel", "citrus peel"],
     categoryId: "food",
     summary: "Orange, lemon, and lime peels still carry oil, scent, and a little bitterness worth keeping.",
-    ideas: [
-      {
-        kind: "kitchen",
-        title: "Candied citrus peel",
-        materials: "Peels from 2 oranges or lemons\n1 cup sugar\n1 cup water\nA pinch of salt",
-        steps: [
-          "Slice peels into strips and boil them once, then drain, to soften the bitter pith.",
-          "Simmer the strips in sugar and water until they look translucent.",
-          "Dry them on a rack. Toss with a little extra sugar if you want them sandy.",
-        ],
-      },
-      {
-        kind: "beauty",
-        title: "Citrus sugar scrub",
-        materials: "Peel of 1 orange or lemon, finely chopped\n1/2 cup sugar\n2 tbsp oil",
-        steps: [
-          "Stir the chopped peel and sugar into the oil.",
-          "Scrub damp hands or feet, then rinse.",
-          "Use it the day you make it. Fresh peel does not keep.",
-        ],
-      },
-    ],
     disposal: {
       method: "compost",
       title: "Compost",
@@ -254,28 +179,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["egg shells", "eggshell"],
     categoryId: "food",
     summary: "Rinsed shells are mostly calcium, useful in stock and as a very fine scrub once baked.",
-    ideas: [
-      {
-        kind: "kitchen",
-        title: "Shells in the stock pot",
-        materials: "Shells from 4–6 eggs, rinsed\nVegetable scraps or a stock you are already making",
-        steps: [
-          "Rinse the shells and pinch out the inner membrane.",
-          "Add them to a simmering stock.",
-          "Strain them out before you serve. They do not dissolve.",
-        ],
-      },
-      {
-        kind: "beauty",
-        title: "Baked-shell hand scrub",
-        materials: "Shells from 2 eggs\n1 tsp honey\n1 tsp oil",
-        steps: [
-          "Bake clean shells at 200°F / 95°C for 10 minutes so they are dry.",
-          "Grind them until the powder feels fine, with no sharp chips.",
-          "Mix a pinch with honey and oil, scrub your hands, and rinse. Do not use it on broken skin.",
-        ],
-      },
-    ],
     disposal: {
       method: "compost",
       title: "Compost",
@@ -292,28 +195,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["old bread", "day-old bread", "bread ends"],
     categoryId: "food",
     summary: "Dry bread is already halfway to croutons or pudding. Mold is the line where it stops being food.",
-    ideas: [
-      {
-        kind: "kitchen",
-        title: "Skillet croutons",
-        materials: "2 cups stale bread, torn\n1 tbsp oil\nA pinch of salt\nDried herbs you already have",
-        steps: [
-          "Toss the bread with oil, salt, and herbs.",
-          "Fry in a skillet, stirring, until the edges are crisp.",
-          "Put them on soup or a salad the same day.",
-        ],
-      },
-      {
-        kind: "kitchen",
-        title: "Stale-bread pudding",
-        materials: "3 cups cubed stale bread\n2 eggs\n1 1/2 cups milk\n2 tbsp sugar\n1 tsp vanilla, if you have it",
-        steps: [
-          "Heat the oven to 350°F / 175°C.",
-          "Whisk eggs, milk, sugar, and vanilla. Pour over the bread and let it sit for 10 minutes.",
-          "Bake in a small dish until the center is just set, about 30 minutes.",
-        ],
-      },
-    ],
     disposal: {
       method: "compost",
       title: "Compost",
@@ -330,18 +211,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["veggie scraps", "vegetable peels", "onion skins", "carrot peels"],
     categoryId: "food",
     summary: "Ends, peels, and stems from a week of cooking make a pot of broth.",
-    ideas: [
-      {
-        kind: "kitchen",
-        title: "Scrap broth",
-        materials: "4 cups clean vegetable scraps\nOnion ends, carrot peels, celery leaves, herb stems\n8 cups water\nSalt",
-        steps: [
-          "Keep a container of scraps in the freezer until it is full. Skip mold, rotten spots, and lots of broccoli if you dislike the smell.",
-          "Cover the scraps with water and simmer for 40 minutes.",
-          "Strain, salt, and use the broth within a few days or freeze it.",
-        ],
-      },
-    ],
     disposal: {
       method: "compost",
       title: "Compost",
@@ -358,28 +227,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["plastic bottle", "water bottle", "soda bottle", "pet bottle"],
     categoryId: "plastic",
     summary: "Clear drink bottles, usually marked PET or #1, that cut into a funnel or a planter.",
-    ideas: [
-      {
-        kind: "home",
-        title: "Funnel from the neck",
-        materials: "1 clean PET bottle\nScissors\nTape to cover the cut edge",
-        steps: [
-          "Rinse the bottle and peel off the label if it is in the way.",
-          "Cut across the shoulder so the neck becomes a funnel.",
-          "Tape the cut rim, then use it for dry goods or watering a plant.",
-        ],
-      },
-      {
-        kind: "crafts",
-        title: "Hanging bottle planter",
-        materials: "1 PET bottle\nString\nA nail\nPotting mix and a cutting or seed",
-        steps: [
-          "Cut a window in the side of the bottle, leaving the ends intact.",
-          "Poke drainage holes, add soil, and plant something small.",
-          "Hang it by the neck where water can drip.",
-        ],
-      },
-    ],
     disposal: {
       method: "recycle",
       title: "Rinse and recycle",
@@ -396,28 +243,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["shopping bag", "carrier bag", "film plastic", "bread bag"],
     categoryId: "plastic",
     summary: "Soft film bags that clog curbside bins and still work as packing material or a braided basket.",
-    ideas: [
-      {
-        kind: "home",
-        title: "Packing cushions",
-        materials: "Clean, dry plastic bags",
-        steps: [
-          "Stuff a few bags inside one bag.",
-          "Tuck the bundle around something you are shipping or storing.",
-          "Keep dirty or crumbly bags out. They shed bits everywhere.",
-        ],
-      },
-      {
-        kind: "crafts",
-        title: "Braided bag basket",
-        materials: "About 10 clean plastic bags\nScissors",
-        steps: [
-          "Cut each bag into loops and knot them into long strips.",
-          "Braid three strips, adding new strips as you go.",
-          "Coil the braid and stitch it to itself with a thin strip of bag until it becomes a small basket.",
-        ],
-      },
-    ],
     disposal: {
       method: "drop-off",
       title: "Store drop-off",
@@ -434,28 +259,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["yoghurt pot", "yogurt pot", "plastic tub"],
     categoryId: "plastic",
     summary: "Small rinsed tubs that start seeds or hold paint and paper clips.",
-    ideas: [
-      {
-        kind: "garden",
-        title: "Seed-starting pots",
-        materials: "Clean yogurt cups\nA nail\nSeed-starting mix\nSeeds",
-        steps: [
-          "Wash the cups with soap so the milk smell is gone.",
-          "Poke two or three holes in the bottom.",
-          "Fill with damp mix, sow the seeds, and set the cups on a tray.",
-        ],
-      },
-      {
-        kind: "crafts",
-        title: "Painted desk cups",
-        materials: "Clean yogurt cups\nAcrylic paint or leftover nail polish\nPaper clips, pins, or cotton swabs",
-        steps: [
-          "Paint the outside and let it dry.",
-          "Group two or three cups and use them for small desk things.",
-          "Skip the dishwasher. The paint will not survive it.",
-        ],
-      },
-    ],
     disposal: {
       method: "recycle",
       title: "Rinse and recycle",
@@ -472,28 +275,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["aluminium can", "soda can", "pop can"],
     categoryId: "metal",
     summary: "Light drink cans that become a lantern or a small cup once the edge is made safe.",
-    ideas: [
-      {
-        kind: "crafts",
-        title: "Punched-can lantern",
-        materials: "1 empty aluminum can\nA nail\nA hammer\nA tea light\nTape",
-        steps: [
-          "Rinse the can and fill it with water, then freeze it so it does not collapse while you punch it.",
-          "Punch a pattern of holes with the nail. Tape the rim if it feels sharp.",
-          "Add a tea light. Never leave the flame unattended.",
-        ],
-      },
-      {
-        kind: "home",
-        title: "Workshop parts cup",
-        materials: "1 aluminum can\nTape or a file\nScissors that can cut thin metal",
-        steps: [
-          "Cut the top off below the ridge if you want a wider mouth.",
-          "File or tape every cut edge before you put your hand near it.",
-          "Use it for screws, coins, or soil. Do not store food in an opened can.",
-        ],
-      },
-    ],
     disposal: {
       method: "recycle",
       title: "Rinse and recycle",
@@ -510,28 +291,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["steel can", "food can", "soup can"],
     categoryId: "metal",
     summary: "Food cans sturdy enough for utensils or a painted holder, after the lid is dealt with safely.",
-    ideas: [
-      {
-        kind: "home",
-        title: "Utensil crock",
-        materials: "1 large food can\nTape\nSoap",
-        steps: [
-          "Remove the lid completely and tape the top rim so it cannot cut.",
-          "Wash out the food smell.",
-          "Dry it and stand wooden spoons in it. Keep raw-food cans for tools, not for drinking.",
-        ],
-      },
-      {
-        kind: "crafts",
-        title: "Painted desk caddy",
-        materials: "2 or 3 clean food cans\nTape\nAcrylic paint\nStrong glue",
-        steps: [
-          "Tape every rim.",
-          "Paint the outsides and let them dry.",
-          "Glue the cans to a piece of cardboard if you want them to stay together as a caddy.",
-        ],
-      },
-    ],
     disposal: {
       method: "recycle",
       title: "Rinse and recycle",
@@ -548,28 +307,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["jam jar", "mason jar", "glass jar", "sauce jar"],
     categoryId: "glass",
     summary: "A jar with its lid is already a container. Washed and dried, it stores food or becomes a lantern.",
-    ideas: [
-      {
-        kind: "home",
-        title: "Pantry jar",
-        materials: "A glass jar with a lid\nHot water and soap\nA label",
-        steps: [
-          "Wash the jar and lid. Soak until the old label slides off.",
-          "Dry them completely so dry food does not clump.",
-          "Fill with beans, spices, or leftovers and write the date on a new label.",
-        ],
-      },
-      {
-        kind: "crafts",
-        title: "Painted votive",
-        materials: "A clean glass jar\nGlass paint or tissue paper and glue\nA tea light or LED candle",
-        steps: [
-          "Decorate the outside and let it dry.",
-          "Drop in an LED candle, or a tea light if the glass is thick.",
-          "Set a real flame on a stable surface and put it out before you leave the room.",
-        ],
-      },
-    ],
     disposal: {
       method: "recycle",
       title: "Rinse and recycle",
@@ -586,28 +323,6 @@ const ITEMS: SeedItem[] = [
     aliases: ["cardboard box", "corrugated cardboard", "shipping box"],
     categoryId: "paper",
     summary: "Clean corrugated boxes that fold into desk trays or lie flat under mulch.",
-    ideas: [
-      {
-        kind: "crafts",
-        title: "Desk organizer",
-        materials: "1 clean cardboard box\nA ruler\nA knife or scissors\nGlue",
-        steps: [
-          "Cut the box down to the height you want for envelopes or notebooks.",
-          "Cut extra walls from the leftover flaps and glue in a divider.",
-          "Leave it plain or wrap it in scrap paper.",
-        ],
-      },
-      {
-        kind: "garden",
-        title: "Sheet mulch",
-        materials: "Plain brown cardboard\nWater",
-        steps: [
-          "Peel off tape, labels, and any glossy coating.",
-          "Lay the cardboard on bare soil where you want to stop weeds.",
-          "Wet it and cover it with leaves, wood chips, or compost so it stays put.",
-        ],
-      },
-    ],
     disposal: {
       method: "recycle",
       title: "Recycle it dry",
@@ -654,27 +369,12 @@ export function seedIfEmpty(db: DB): void {
   const insertItem = db.prepare(
     "INSERT INTO items (id, name, aliases, category_id, summary, status, created_at) VALUES (?, ?, ?, ?, ?, 'published', ?)",
   );
-  const insertIdea = db.prepare(
-    `INSERT INTO ideas (id, item_id, kind, title, materials, steps, author_profile_id, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, NULL, 'published', ?)`,
-  );
   const insertDisposal = db.prepare(
     "INSERT INTO disposals (id, item_id, category_id, method, title, steps) VALUES (?, ?, ?, ?, ?, ?)",
   );
 
   for (const item of ITEMS) {
     insertItem.run(item.id, item.name, JSON.stringify(item.aliases), item.categoryId, item.summary, SEEDED_AT);
-    item.ideas.forEach((idea, index) => {
-      insertIdea.run(
-        `${item.id}-idea-${index + 1}`,
-        item.id,
-        idea.kind,
-        idea.title,
-        idea.materials,
-        JSON.stringify(idea.steps),
-        SEEDED_AT,
-      );
-    });
     insertDisposal.run(
       `disposal-${item.id}`,
       item.id,

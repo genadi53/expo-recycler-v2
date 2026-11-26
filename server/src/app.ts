@@ -62,6 +62,11 @@ const submissionSchema = z
       .union([z.string(), z.array(z.string())])
       .optional(),
     disposalNote: z.string().optional(),
+    // Key Ingredients: ids of published Items. Duplicates and the Idea's own Item are ignored.
+    ingredientIds: z
+      .array(z.string().trim().min(1).max(80), { error: "Ingredients must be a list of item ids." })
+      .max(50, "Too many ingredients.")
+      .optional(),
     image: imagePayloadSchema.optional(),
     itemImage: imagePayloadSchema.optional(),
   })
@@ -107,6 +112,22 @@ function stepsProvided(steps: string | string[] | undefined): boolean {
   if (steps == null) return false;
   if (Array.isArray(steps)) return steps.some((step) => step.trim().length > 0);
   return steps.trim().length > 0;
+}
+
+/** Every id must be a published Item, else 400. Returns the ids without duplicates, in order. */
+function requirePublishedItems(db: DB, ids: string[]): string[] {
+  const unique = [...new Set(ids)];
+  const find = db.prepare("SELECT 1 FROM items WHERE id = ? AND status = 'published'");
+  for (const id of unique) {
+    if (!find.get(id)) throw new HttpError(400, "Pick ingredients from the catalog.");
+  }
+  return unique;
+}
+
+/** Links an Idea to its own Item plus its Key Ingredients (already validated). */
+function linkIdeaIngredients(db: DB, ideaId: string, ownItemId: string, ingredientIds: string[]): void {
+  const link = db.prepare("INSERT OR IGNORE INTO idea_ingredients (idea_id, item_id) VALUES (?, ?)");
+  for (const itemId of [ownItemId, ...ingredientIds]) link.run(ideaId, itemId);
 }
 
 /** Idea fields are recipe-only. Blank strings from older clients count as absent. */
@@ -645,6 +666,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
       requireProfile(db, body.profileId);
       const category = findCategory(db, body.category);
       if (!category) throw new HttpError(400, "Pick a category from the list.");
+      const ingredientIds = withIdea ? requirePublishedItems(db, body.ingredientIds ?? []) : [];
 
       const existing = db.prepare("SELECT * FROM items WHERE lower(name) = lower(?)").get(body.itemName) as
         | ItemRow
@@ -713,6 +735,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
           body.profileId,
           nowIso(),
         );
+        linkIdeaIngredients(db, ideaId, itemId, ingredientIds);
 
         if (decodedImage && imageFilename) {
           fs.writeFileSync(path.join(imagesDir, imageFilename), decodedImage.buffer);
