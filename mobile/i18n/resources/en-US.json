@@ -194,6 +194,7 @@
     "searching": "Searching…",
     "noResults": "Nothing in the catalog matches “{{q}}”.",
     "add": "Add {{name}}",
+    "ownItem": "{{name}}, this idea’s own item, always included",
     "inList": "{{name}}, already in your list",
     "remove": "{{name}}, remove"
   },
@@ -368,6 +369,9 @@
     "steps": "Steps",
     "stepsPlaceholder": "One step per line",
     "ideaPicture": "Idea picture",
+    "keyIngredients": "Key ingredients (optional)",
+    "keyIngredientsHint": "What else can’t this idea be made without? Its own item is always included.",
+    "keyIngredientsPlaceholder": "Add a key ingredient…",
     "addRecipeHeadline": "Share a reuse idea",
     "addRecipeBody": "It publishes immediately as {{name}}. Pick an existing item or create one, then describe the idea.",
     "addPicture": "Add picture",

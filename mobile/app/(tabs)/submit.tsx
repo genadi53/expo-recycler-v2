@@ -1,9 +1,11 @@
+import { IngredientChips, IngredientTypeahead } from "@/components/ingredient-picker";
 import { useProfile } from "@/components/profile";
 import { IDEA_KIND_META, IDEA_KINDS, parseIdeaKind, type IdeaKind } from "@/constants/idea-kinds";
 import { colors, serif } from "@/components/theme";
 import { Banner, Button, Chip, EmptyState, ErrorState, Field, Input, ItemRow, LoadingState, Screen } from "@/components/ui";
 import i18n from "@/i18n";
 import { api } from "@/lib/api";
+import type { Ingredient } from "@/lib/ingredient-list";
 import { categoryLabel, kindLabel } from "@/lib/format";
 import { submitRoute } from "@/lib/submit-route";
 import type { Category, IdeaImagePayload, ItemSummary, SubmissionResult } from "@/lib/types";
@@ -16,6 +18,9 @@ import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native
 
 type SubmitMode = "idea" | "item";
 type ItemAttachMode = "search" | "create";
+
+/** Chip id for the own Item while it is still being created (it has no catalog id yet). */
+const NEW_OWN_ITEM_ID = "__new-own-item__";
 
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
@@ -60,11 +65,15 @@ export default function SubmitScreen() {
 
   // Drawer / deep links reuse this tab screen. A new `fresh` token means start over,
   // even when mode stays the same (e.g. Add item again after a success screen).
-  useEffect(() => {
-    if (!fresh) return;
-    setSuccess(null);
-    setFormKey((value) => value + 1);
-  }, [fresh]);
+  // Adjusted during render (not in an effect) so the reset lands in the same pass.
+  const [seenFresh, setSeenFresh] = useState(fresh);
+  if (fresh !== seenFresh) {
+    setSeenFresh(fresh);
+    if (fresh) {
+      setSuccess(null);
+      setFormKey((value) => value + 1);
+    }
+  }
 
   function another() {
     setSuccess(null);
@@ -419,6 +428,8 @@ function RecipeForm({
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [createHint, setCreateHint] = useState<{ name: string; text: string } | null>(null);
+  // Key Ingredients besides the own Item, in local state (not the Ingredient list store).
+  const [keyIngredients, setKeyIngredients] = useState<Ingredient[]>([]);
 
   const trimmedSearch = searchQuery.trim();
   const canSearch = itemMode === "search" && !selectedItem && trimmedSearch.length > 0;
@@ -428,6 +439,28 @@ function RecipeForm({
   const trimmedCreateName = itemName.trim();
   const createHintText =
     itemMode === "create" && trimmedCreateName && createHint?.name === trimmedCreateName ? createHint.text : "";
+
+  // The own Item is always one of the Idea’s Ingredients, so it shows first as a locked chip.
+  const ownIngredient: Ingredient | null =
+    itemMode === "search"
+      ? selectedItem
+        ? { id: selectedItem.id, name: selectedItem.name }
+        : null
+      : trimmedCreateName
+        ? { id: NEW_OWN_ITEM_ID, name: trimmedCreateName }
+        : null;
+  const extraIngredients = keyIngredients.filter(
+    (ingredient) =>
+      ingredient.id !== ownIngredient?.id && ingredient.name.toLowerCase() !== ownIngredient?.name.toLowerCase(),
+  );
+  const shownIngredients = ownIngredient ? [ownIngredient, ...extraIngredients] : extraIngredients;
+  const hasIngredient = (id: string) => shownIngredients.some((ingredient) => ingredient.id === id);
+  const addIngredient = (ingredient: Ingredient) =>
+    setKeyIngredients((current) =>
+      current.some((entry) => entry.id === ingredient.id) ? current : [...current, ingredient],
+    );
+  const removeIngredient = (id: string) =>
+    setKeyIngredients((current) => current.filter((ingredient) => ingredient.id !== id));
 
   useEffect(() => {
     if (!canSearch) return;
@@ -541,6 +574,7 @@ function RecipeForm({
         disposalNote: itemMode === "create" ? disposalNote.trim() || undefined : undefined,
         image: ideaPicture?.payload,
         itemImage: itemMode === "create" ? itemPicture?.payload : undefined,
+        ingredientIds: extraIngredients.length ? extraIngredients.map((ingredient) => ingredient.id) : undefined,
       });
       await onPublished(result);
     } catch (err) {
@@ -671,6 +705,24 @@ function RecipeForm({
         onRemoveIdeaPicture={() => setIdeaPicture(null)}
         fieldErrors={fieldErrors}
       />
+
+      <Field label={t("submit.keyIngredients")}>
+        <View style={styles.searchBlock}>
+          <Text style={styles.hint}>{t("submit.keyIngredientsHint")}</Text>
+          <IngredientChips
+            ingredients={shownIngredients}
+            onRemove={removeIngredient}
+            lockedIds={ownIngredient ? [ownIngredient.id] : undefined}
+            testID="submit-ingredient-chips"
+          />
+          <IngredientTypeahead
+            has={hasIngredient}
+            onAdd={addIngredient}
+            placeholder={t("submit.keyIngredientsPlaceholder")}
+            testID="submit-ingredient-search"
+          />
+        </View>
+      </Field>
 
       <Button label={t("submit.publish")} onPress={publish} loading={saving} testID="publish" />
     </>

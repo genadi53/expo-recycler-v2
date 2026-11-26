@@ -171,33 +171,51 @@ function HighlightedName({ name, query }: { name: string; query: string }) {
   );
 }
 
-/** Picked Ingredients as `greenSoft` chips; each ✕ calls `onRemove` with the Ingredient id. */
+/**
+ * Picked Ingredients as `greenSoft` chips; each ✕ calls `onRemove` with the Ingredient id.
+ * Ids in `lockedIds` (e.g. an Idea's own Item) show a lock instead of ✕ and can't be removed.
+ */
 export function IngredientChips({
   ingredients,
   onRemove,
+  lockedIds,
   testID = "ingredient-chips",
 }: {
   ingredients: Ingredient[];
   onRemove: (id: string) => void;
+  lockedIds?: readonly string[];
   testID?: string;
 }) {
   const { t } = useTranslation();
   if (ingredients.length === 0) return null;
   return (
     <View style={styles.chips} testID={testID}>
-      {ingredients.map((ingredient) => (
-        <Pressable
-          key={ingredient.id}
-          accessibilityRole="button"
-          accessibilityLabel={t("ingredients.remove", { name: ingredient.name })}
-          onPress={() => onRemove(ingredient.id)}
-          style={({ pressed }) => [styles.pickedChip, pressed && styles.pressed, pointer]}
-          testID={`${testID}-${ingredient.id}`}
-        >
-          <Text style={styles.pickedChipText}>{ingredient.name}</Text>
-          <Text style={styles.pickedChipX}>✕</Text>
-        </Pressable>
-      ))}
+      {ingredients.map((ingredient) =>
+        lockedIds?.includes(ingredient.id) ? (
+          <View
+            key={ingredient.id}
+            accessible
+            accessibilityLabel={t("ingredients.ownItem", { name: ingredient.name })}
+            style={styles.pickedChip}
+            testID={`${testID}-${ingredient.id}-locked`}
+          >
+            <Text style={styles.pickedChipText}>{ingredient.name}</Text>
+            <Ionicons name="lock-closed" size={13} color={colors.greenDark} />
+          </View>
+        ) : (
+          <Pressable
+            key={ingredient.id}
+            accessibilityRole="button"
+            accessibilityLabel={t("ingredients.remove", { name: ingredient.name })}
+            onPress={() => onRemove(ingredient.id)}
+            style={({ pressed }) => [styles.pickedChip, pressed && styles.pressed, pointer]}
+            testID={`${testID}-${ingredient.id}`}
+          >
+            <Text style={styles.pickedChipText}>{ingredient.name}</Text>
+            <Text style={styles.pickedChipX}>✕</Text>
+          </Pressable>
+        ),
+      )}
     </View>
   );
 }
