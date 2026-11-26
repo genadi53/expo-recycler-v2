@@ -98,8 +98,8 @@
     "searchSubmit": "Search",
     "rescueTitle": "Rescue an item",
     "rescueBody": "Got something about to go to waste?",
-    "recipesTitle": "Explore recipes",
-    "recipesBody": "Cook something good from what's left.",
+    "recipesTitle": "Explore ideas",
+    "recipesBody": "Recipes, beauty, cleaning, garden and more from what's left.",
     "freshIdeas": "Fresh ideas",
     "seeAll": "See all",
     "ideasLoading": "Loading ideas…",
@@ -135,11 +135,15 @@
     ]
   },
   "recipes": {
-    "title": "Recipes",
-    "loading": "Loading recipes…",
-    "emptyTitle": "No recipes yet",
-    "emptyBody": "Share a kitchen idea from Submit and it shows up here right away.",
-    "lead": "Kitchen ideas from the shared catalog. Open one to see steps on the item."
+    "title": "Explore ideas",
+    "loading": "Loading ideas…",
+    "emptyTitle": "No ideas yet",
+    "emptyKindTitle": "No {{kind}} ideas yet",
+    "emptyBody": "Ideas people share show up here right away.",
+    "shareFirst": "Share the first idea →",
+    "lead": "Ideas of every kind from the shared catalog. Open one to see what you need and the steps.",
+    "allKinds": "All",
+    "filterA11y": "Filter ideas by kind"
   },
   "log": {
     "title": "Your log",

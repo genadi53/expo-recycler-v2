@@ -12,14 +12,14 @@ const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 /** Every tile in the grid is this tall; titles clamp to two lines so none grows. */
 const TILE_HEIGHT = 200;
 
-/** Full-bleed photo tile (or kind accent + icon), kind badge on top, title on a dark strip. */
+/** Opens Idea detail (`/idea/[id]`, built in #14). Full-bleed photo tile (or kind accent + icon), kind badge on top, title on a dark strip. */
 export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
   const { t } = useTranslation();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("home.ideaA11y", { title: recipe.title, kind: kindLabel(recipe.kind), item: recipe.itemName })}
-      onPress={() => router.push(`/item/${recipe.itemId}` as Href)}
+      onPress={() => router.push(`/idea/${recipe.id}` as Href)}
       style={({ pressed }) => [styles.tile, pressed && styles.pressed, pointer]}
       testID={`recipe-${recipe.id}`}
     >
