@@ -2,6 +2,7 @@ import { OnboardingGate } from "@/components/onboarding-gate";
 import { ProfileProvider } from "@/components/profile";
 import { colors } from "@/components/theme";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
+import { IngredientListProvider } from "@/lib/ingredient-list";
 import "@/i18n";
 import { Stack } from "expo-router";
 import Head from "expo-router/head";
@@ -19,6 +20,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <LocaleProvider>
         <ProfileProvider>
+          <IngredientListProvider>
           <OnboardingGate>
             <Head>
               <title>Againful</title>
@@ -53,6 +55,7 @@ export default function RootLayout() {
               </View>
             </View>
           </OnboardingGate>
+          </IngredientListProvider>
         </ProfileProvider>
       </LocaleProvider>
     </SafeAreaProvider>

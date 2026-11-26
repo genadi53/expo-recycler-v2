@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   dim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(28, 25, 21, 0.45)",
+    backgroundColor: colors.scrim,
   },
   sheet: {
     backgroundColor: colors.card,

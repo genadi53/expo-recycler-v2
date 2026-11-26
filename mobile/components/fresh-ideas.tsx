@@ -4,6 +4,7 @@ import { IdeaKindLabel } from "@/components/idea-kind-label";
 import { colors, serif } from "@/components/theme";
 import { api } from "@/lib/api";
 import { kindLabel } from "@/lib/format";
+import { ideaHref } from "@/lib/idea-route";
 import type { IdeaSummary } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,6 +26,9 @@ const GUTTER = 20;
 export function FreshIdeas({ limit = 6, testID = "fresh-ideas" }: { limit?: number; testID?: string }) {
   const { t } = useTranslation();
   const { status, data, error, retry } = useQuery(`fresh-ideas-${limit}`, () => api.ideas({ limit }));
+
+  // No Ideas yet (e.g. right after the fresh start): the whole section hides itself.
+  if (status === "ready" && data && data.ideas.length === 0) return null;
 
   return (
     <View style={styles.section} testID={testID}>
@@ -68,10 +72,6 @@ export function FreshIdeas({ limit = 6, testID = "fresh-ideas" }: { limit?: numb
         </View>
       ) : null}
 
-      {status === "ready" && data && data.ideas.length === 0 ? (
-        <Text style={styles.stateText}>{t("home.ideasEmpty")}</Text>
-      ) : null}
-
       {status === "ready" && data && data.ideas.length > 0 ? (
         <ScrollView
           horizontal
@@ -98,7 +98,7 @@ function IdeaCard({ idea }: { idea: IdeaSummary }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("home.ideaA11y", { title: idea.title, kind: kindLabel(idea.kind), item: idea.itemName })}
-      onPress={() => router.push(`/item/${idea.itemId}` as Href)}
+      onPress={() => router.push(ideaHref(idea.id))}
       style={({ pressed }) => [styles.card, pressed && styles.pressed, pointer]}
       testID={`fresh-idea-${idea.id}`}
     >

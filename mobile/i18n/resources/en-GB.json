@@ -98,12 +98,11 @@
     "searchSubmit": "Search",
     "rescueTitle": "Rescue an item",
     "rescueBody": "Got something about to go to waste?",
-    "recipesTitle": "Explore recipes",
-    "recipesBody": "Cook something good from what's left.",
+    "recipesTitle": "Explore ideas",
+    "recipesBody": "Recipes, beauty, cleaning, garden and more from what's left.",
     "freshIdeas": "Fresh ideas",
     "seeAll": "See all",
     "ideasLoading": "Loading ideas…",
-    "ideasEmpty": "No ideas yet — share the first one from the + button.",
     "ideaA11y": "{{title}}, {{kind}}, {{item}}"
   },
   "impact": {
@@ -135,11 +134,15 @@
     ]
   },
   "recipes": {
-    "title": "Recipes",
-    "loading": "Loading recipes…",
-    "emptyTitle": "No recipes yet",
-    "emptyBody": "Share a kitchen idea from Submit and it shows up here right away.",
-    "lead": "Kitchen ideas from the shared catalog. Open one to see steps on the item."
+    "title": "Explore ideas",
+    "loading": "Loading ideas…",
+    "emptyTitle": "No ideas yet",
+    "emptyKindTitle": "No {{kind}} ideas yet",
+    "emptyBody": "Ideas people share show up here right away.",
+    "shareFirst": "Share the first idea →",
+    "lead": "Ideas of every kind from the shared catalog. Open one to see what you need and the steps.",
+    "allKinds": "All",
+    "filterA11y": "Filter ideas by kind"
   },
   "log": {
     "title": "Your log",
@@ -184,18 +187,63 @@
     "city": "City",
     "world": "World"
   },
-  "browse": {
-    "title": "Browse",
-    "tagline": "What do you have, and can it be reused?",
-    "note": "A shared catalog for households. No account.",
-    "placeholder": "Banana peels, jars, cans…",
-    "hint": "Type what you have.",
-    "search": "Search the catalog",
-    "orMaterial": "Or start with a material",
+  "ingredients": {
+    "searchPlaceholder": "Banana peel, oats, jars…",
+    "clearSearch": "Clear search",
+    "searching": "Searching…",
+    "noResults": "Nothing in the catalog matches “{{q}}”.",
+    "add": "Add {{name}}",
+    "ownItem": "{{name}}, this idea’s own item, always included",
+    "inList": "{{name}}, already in your list",
+    "alreadyAdded": "{{name}}, already added",
+    "remove": "{{name}}, remove"
+  },
+  "builder": {
+    "title": "Ingredient list",
+    "headline": "What do you ",
+    "headlineEm": "have at home?",
+    "subline": "Add what you have and we’ll find what you can make.",
+    "yourList": "Your list · {{count}}",
+    "clear": "Clear",
+    "emptyList": "Nothing yet. Search, tap a popular ingredient, or browse by material.",
+    "popular": "Popular",
+    "byMaterial": "Browse by material",
     "loading": "Looking through the catalog…",
     "noCategories": "No categories yet.",
-    "itemCount": "{{count}} item",
-    "itemCount_other": "{{count}} items"
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "cantFind": "Can’t find it?",
+    "suggest": "Suggest it →",
+    "find": "Find what I can make →",
+    "findHint": "Add at least one ingredient first."
+  },
+  "categorySheet": {
+    "loading": "Loading items…",
+    "empty": "No items in this material yet.",
+    "done": "Done"
+  },
+  "matches": {
+    "title": "Matches",
+    "loading": "Finding what you can make…",
+    "summaryIdeas_one": "{{count}} idea",
+    "summaryIdeas_other": "{{count}} ideas",
+    "summaryFrom_one": "from {{count}} ingredient",
+    "summaryFrom_other": "from {{count}} ingredients",
+    "editList": "Edit list",
+    "tierNow": "Make it now",
+    "tierAlmost": "Almost there",
+    "tierLater": "Save for later",
+    "tierA11y": "{{tier}}, {{count}}",
+    "have": "✓ {{have}}/{{need}}",
+    "need": "Need {{names}}",
+    "cardA11y": "{{title}}, {{kind}}, has {{have}} of {{need}}",
+    "cardMissingA11y": "{{title}}, {{kind}}, has {{have}} of {{need}}, missing {{names}}",
+    "emptyTitle": "Nothing to make yet",
+    "emptyBody": "No ideas use these ingredients yet. Share one and it shows up here right away.",
+    "shareFirst": "Share the first idea →",
+    "noListTitle": "Your list is empty",
+    "noListBody": "Add what you have at home to see what you can make.",
+    "addIngredients": "Add ingredients"
   },
   "results": {
     "title": "Results",
@@ -233,7 +281,6 @@
     "noDisposal": "No disposal guidance for this item yet.",
     "disclaimer": "This is general guidance, not a map of local facilities. Rules differ by city, and Againful does not ask where you live.",
     "sharedBy": "Shared by {{name}}",
-    "youllNeed": "You’ll need",
     "picture": "{{name}} picture"
   },
   "logAction": {
@@ -321,6 +368,9 @@
     "steps": "Steps",
     "stepsPlaceholder": "One step per line",
     "ideaPicture": "Idea picture",
+    "keyIngredients": "Key ingredients (optional)",
+    "keyIngredientsHint": "What else can’t this idea be made without? Its own item is always included.",
+    "keyIngredientsPlaceholder": "Add a key ingredient…",
     "addRecipeHeadline": "Share a reuse idea",
     "addRecipeBody": "It publishes immediately as {{name}}. Pick an existing item or create one, then describe the idea.",
     "addPicture": "Add picture",
@@ -410,5 +460,29 @@
     "actionOther": "{{count}} actions in the last year",
     "less": "Less",
     "more": "More"
+  },
+  "idea": {
+    "title": "Idea",
+    "loading": "Opening the idea…",
+    "openFailed": "We couldn't open this idea.",
+    "fromItem": "From {{item}}",
+    "ingredients": "Ingredients",
+    "inYourList": "{{have}} of {{total}} in your list",
+    "inList": "In your list",
+    "missing": "Missing",
+    "inListA11y": "{{name}}, in your list",
+    "missingA11y": "{{name}}, missing",
+    "alsoNeed": "You'll also need: {{materials}}",
+    "steps": "Steps",
+    "stepA11y": "Step {{number}}: {{text}}",
+    "startMaking": "Start making"
+  },
+  "make": {
+    "stepOf": "Step {{current}} of {{total}}",
+    "nextLabel": "Next ·",
+    "back": "Back",
+    "nextStep": "Next step",
+    "iMadeIt": "I made it",
+    "noSteps": "This idea has no steps yet."
   }
 }

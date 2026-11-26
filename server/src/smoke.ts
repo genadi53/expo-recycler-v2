@@ -4,6 +4,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { createApp } from "./app.js";
 import { ensureImagesDir, openDatabase } from "./db.js";
+import { migrateIdeaKinds } from "./migrateIdeaKinds.js";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -17,14 +18,19 @@ async function json<T>(res: Response): Promise<T> {
   return body;
 }
 
+const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((value, index) => value === b[index]);
+
 const ideaImagesDir = ensureImagesDir(fs.mkdtempSync(path.join(os.tmpdir(), "recycler-idea-images-")));
 const itemImagesDir = ensureImagesDir(fs.mkdtempSync(path.join(os.tmpdir(), "recycler-item-images-")));
-const db = openDatabase(":memory:");
+const db = openDatabase(":memory:", ideaImagesDir);
 const app = createApp(db, ideaImagesDir, itemImagesDir);
 
 // 1x1 PNG
 const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+const seededIdeas = await json<{ ideas: unknown[] }>(await app.request("/ideas"));
+assert(seededIdeas.ideas.length === 0, `seed should create no ideas, got ${seededIdeas.ideas.length}`);
 
 const categories = await json<{ categories: { id: string; itemCount: number }[] }>(await app.request("/categories"));
 assert(categories.categories.length === 6, "expected 6 categories");
@@ -50,7 +56,7 @@ const detail = await json<{
   disposal: { method: string; source: string; steps: string[] };
   logMethods: { method: string; points: number }[];
 }>(await app.request("/items/banana-peels"));
-assert(detail.ideas.length >= 1 && detail.ideas[0].steps.length >= 1, "item should include ideas");
+assert(detail.ideas.length === 0, "seeded items should start without ideas");
 assert(detail.disposal.method === "compost" && detail.disposal.source === "item", "item disposal missing");
 assert(detail.logMethods.some((method) => method.method === "trash" && method.points === 2), "trash option missing");
 
@@ -60,7 +66,7 @@ assert(missingItem.status === 404, "missing item should 404");
 const noProfile = await app.request("/logs", {
   method: "POST",
   headers: { "content-type": "application/json" },
-  body: JSON.stringify({ profileId: "ghost", itemId: "banana-peels", action: "reuse", ideaId: detail.ideas[0].id }),
+  body: JSON.stringify({ profileId: "ghost", itemId: "banana-peels", action: "reuse", ideaId: "any-idea" }),
 });
 assert(noProfile.status === 404, "log should not invent a profile");
 
@@ -104,6 +110,265 @@ const blankSteps = await app.request("/submissions", {
 });
 assert(blankSteps.status === 400, "blank steps should fail");
 
+// Ideas come only from submissions. A separate profile shares them so person-1's badges stay untouched.
+await json(
+  await app.request("/profiles/sharer-1", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ displayName: "Sharer" }),
+  }),
+);
+async function shareIdea(input: {
+  itemName: string;
+  category: string;
+  ideaKind: string;
+  title: string;
+  ingredientIds?: string[];
+  profileId?: string;
+}): Promise<{ id: string; itemId: string }> {
+  const res = await json<{ item: { id: string }; idea: { id: string } }>(
+    await app.request("/submissions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        profileId: input.profileId ?? "sharer-1",
+        category: input.category,
+        itemName: input.itemName,
+        ideaKind: input.ideaKind,
+        title: input.title,
+        materials: "Stuff",
+        steps: ["Do it."],
+        ingredientIds: input.ingredientIds,
+      }),
+    }),
+  );
+  return { id: res.idea.id, itemId: res.item.id };
+}
+const sharedIdeas = {
+  banana: await shareIdea({ itemName: "Banana peels", category: "food", ideaKind: "kitchen", title: "Banana peel chutney" }),
+  citrus: await shareIdea({ itemName: "Citrus peels", category: "food", ideaKind: "kitchen", title: "Candied peel" }),
+  eggshells: await shareIdea({ itemName: "Eggshells", category: "food", ideaKind: "kitchen", title: "Eggshell calcium" }),
+  coffee: await shareIdea({ itemName: "Coffee grounds", category: "food", ideaKind: "kitchen", title: "Coffee rub" }),
+  bottles: await shareIdea({ itemName: "PET bottles", category: "plastic", ideaKind: "art", title: "Bottle planter" }),
+  cans: await shareIdea({ itemName: "Aluminum cans", category: "metal", ideaKind: "useful", title: "Can pencil cup" }),
+  cups: await shareIdea({ itemName: "Yogurt cups", category: "plastic", ideaKind: "garden", title: "Seed-starting pots" }),
+  cardboard: await shareIdea({ itemName: "Cardboard", category: "paper", ideaKind: "garden", title: "Sheet mulch" }),
+};
+
+// --- Key Ingredients on shared Ideas ---------------------------------------------------------
+
+type IdeaDetail = {
+  idea: {
+    id: string;
+    kind: string;
+    title: string;
+    materials: string;
+    steps: string[];
+    imageUrl: string | null;
+    itemId: string;
+    itemName: string;
+    categoryName: string;
+    authorName: string | null;
+    createdAt: string;
+    ingredients: { id: string; name: string }[];
+  };
+};
+const ideaDetail = async (ideaId: string) => (await json<IdeaDetail>(await app.request(`/ideas/${ideaId}`))).idea;
+const linkedItemIds = async (ideaId: string) =>
+  (await ideaDetail(ideaId)).ingredients.map((ingredient) => ingredient.id).sort();
+
+assert(
+  sameList(await linkedItemIds(sharedIdeas.banana.id), ["banana-peels"]),
+  `an idea without ingredientIds should link only its own item, got ${await linkedItemIds(sharedIdeas.banana.id)}`,
+);
+
+const smoothie = await shareIdea({
+  itemName: "Banana peels",
+  category: "food",
+  ideaKind: "kitchen",
+  title: "Peel smoothie",
+  ingredientIds: ["citrus-peels", "banana-peels", "eggshells", "citrus-peels"],
+});
+assert(
+  sameList(await linkedItemIds(smoothie.id), ["banana-peels", "citrus-peels", "eggshells"]),
+  `ingredientIds should be linked once each with the own item, got ${await linkedItemIds(smoothie.id)}`,
+);
+
+const newItemIdea = await shareIdea({
+  itemName: "Old candles",
+  category: "other",
+  ideaKind: "home",
+  title: "Jar candle",
+  ingredientIds: ["glass-jars"],
+});
+assert(
+  sameList(await linkedItemIds(newItemIdea.id), [newItemIdea.itemId, "glass-jars"].sort()),
+  `a new item's idea should link the new item and its ingredients, got ${await linkedItemIds(newItemIdea.id)}`,
+);
+
+const ideaCountBeforeRejects = Number((db.prepare("SELECT COUNT(*) AS n FROM ideas").get() as { n: number }).n);
+db.prepare(
+  "INSERT INTO items (id, name, aliases, category_id, summary, status, created_at) VALUES (?, ?, '[]', 'food', 'Pending.', 'pending', ?)",
+).run("pending-peel", "Pending peel", new Date().toISOString());
+for (const [label, ingredientIds] of [
+  ["unknown", ["not-an-item"]],
+  ["unpublished", ["pending-peel"]],
+] as const) {
+  const rejected = await app.request("/submissions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      profileId: "sharer-1",
+      category: "food",
+      itemName: "Banana peels",
+      ideaKind: "kitchen",
+      title: "Should not exist",
+      materials: "Stuff",
+      steps: ["Do it."],
+      ingredientIds,
+    }),
+  });
+  assert(rejected.status === 400, `${label} ingredientIds should 400, got ${rejected.status}`);
+}
+assert(
+  Number((db.prepare("SELECT COUNT(*) AS n FROM ideas").get() as { n: number }).n) === ideaCountBeforeRejects,
+  "rejected ingredientIds should not create an idea",
+);
+
+// --- Idea detail -----------------------------------------------------------------------------
+
+{
+  const detail = await ideaDetail(smoothie.id);
+  assert(detail.id === smoothie.id, "idea detail should carry its id");
+  assert(detail.title === "Peel smoothie" && detail.kind === "kitchen", "idea detail should carry title and kind");
+  assert(detail.itemId === "banana-peels" && detail.itemName === "Banana peels", "idea detail should carry its item");
+  assert(detail.categoryName === "Food", `idea detail should carry the category name, got ${detail.categoryName}`);
+  assert(detail.materials === "Stuff", "idea detail should carry the materials text");
+  assert(sameList(detail.steps, ["Do it."]), "idea detail should carry the steps as a list");
+  assert(detail.authorName === "Sharer", "idea detail should carry the author name");
+  assert(detail.imageUrl === null && Boolean(detail.createdAt), "idea detail should carry imageUrl and createdAt");
+  assert(
+    sameList(
+      detail.ingredients.map((ingredient) => ingredient.name),
+      ["Banana peels", "Citrus peels", "Eggshells"],
+    ),
+    `idea detail should list the own item first, then ingredients by name, got ${JSON.stringify(detail.ingredients)}`,
+  );
+  const missingIdea = await app.request("/ideas/not-an-idea");
+  assert(missingIdea.status === 404, `unknown idea should 404, got ${missingIdea.status}`);
+  const hiddenId = crypto.randomUUID();
+  db.prepare(
+    `INSERT INTO ideas (id, item_id, kind, title, materials, steps, status, created_at)
+     VALUES (?, 'banana-peels', 'kitchen', 'Hidden', 'Stuff', '["Do it."]', 'pending', ?)`,
+  ).run(hiddenId, new Date().toISOString());
+  db.prepare("INSERT INTO idea_ingredients (idea_id, item_id) VALUES (?, 'banana-peels')").run(hiddenId);
+  const hiddenIdea = await app.request(`/ideas/${hiddenId}`);
+  assert(hiddenIdea.status === 404, `unpublished idea should 404, got ${hiddenIdea.status}`);
+}
+
+// --- Matches ---------------------------------------------------------------------------------
+
+type MatchListing = {
+  matches: {
+    id: string;
+    kind: string;
+    title: string;
+    itemId: string;
+    itemName: string;
+    categoryName: string;
+    imageUrl: string | null;
+    have: number;
+    need: number;
+    missing: string[];
+    tier: string;
+  }[];
+};
+// A second sharer, so sharer-1's points stay below person-1's on the leaderboard.
+await json(
+  await app.request("/profiles/sharer-2", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ displayName: "Second sharer" }),
+  }),
+);
+const peelCompost = await shareIdea({
+  profileId: "sharer-2",
+  itemName: "Cardboard",
+  category: "paper",
+  ideaKind: "garden",
+  title: "Peel compost",
+  ingredientIds: ["banana-peels", "eggshells", "coffee-grounds"],
+});
+{
+  const matches = await json<MatchListing>(await app.request("/matches?items=banana-peels,citrus-peels,not-an-item"));
+  const summary = matches.matches.map((match) => `${match.title}:${match.tier}:${match.have}/${match.need}`);
+  assert(
+    sameList(summary, [
+      "Candied peel:now:1/1",
+      "Banana peel chutney:now:1/1",
+      "Peel smoothie:almost:2/3",
+      "Peel compost:later:1/4",
+    ]),
+    `matches should be tiered (0, 1, 2+ missing), newest first in a tier, got ${JSON.stringify(summary)}`,
+  );
+  const smoothieMatch = matches.matches.find((match) => match.id === smoothie.id)!;
+  assert(sameList(smoothieMatch.missing, ["Eggshells"]), `smoothie should miss eggshells, got ${smoothieMatch.missing}`);
+  assert(
+    smoothieMatch.kind === "kitchen" && smoothieMatch.itemId === "banana-peels" && smoothieMatch.categoryName === "Food",
+    "a match should carry the idea summary",
+  );
+  const compostMatch = matches.matches.find((match) => match.id === peelCompost.id)!;
+  assert(
+    sameList(compostMatch.missing, ["Cardboard", "Coffee grounds", "Eggshells"]),
+    `missing names should be sorted by name, got ${compostMatch.missing}`,
+  );
+  assert(matches.matches[0]!.missing.length === 0, "a make-it-now match should miss nothing");
+
+  const byHave = await json<MatchListing>(await app.request("/matches?items=banana-peels,eggshells,cardboard"));
+  const byHaveSummary = byHave.matches.map((match) => `${match.title}:${match.tier}:${match.have}`);
+  assert(
+    sameList(byHaveSummary, [
+      "Sheet mulch:now:1",
+      "Eggshell calcium:now:1",
+      "Banana peel chutney:now:1",
+      "Peel compost:almost:3",
+      "Peel smoothie:almost:2",
+    ]),
+    `within a tier, more have comes first, got ${JSON.stringify(byHaveSummary)}`,
+  );
+
+  const onlyUnknown = await json<MatchListing>(await app.request("/matches?items=not-an-item"));
+  assert(onlyUnknown.matches.length === 0, "unknown ids alone should match nothing");
+  for (const query of ["", "?items=", "?items=%20,%20"]) {
+    const empty = await app.request(`/matches${query}`);
+    assert(empty.status === 400, `empty matches query '${query}' should 400, got ${empty.status}`);
+  }
+}
+
+// --- Popular Items ---------------------------------------------------------------------------
+
+{
+  type PopularListing = { items: { id: string; name: string; categoryName: string; ideaCount: number }[] };
+  const popular = await json<PopularListing>(await app.request("/items?popular=1&limit=4"));
+  const ranked = popular.items.map((item) => `${item.id}:${item.ideaCount}`);
+  // Published Ideas linking each Item (the pending "Hidden" one is not counted):
+  // banana-peels 3 (chutney, smoothie, compost), eggshells 3 (calcium, smoothie, compost),
+  // cardboard 2, citrus-peels 2, coffee-grounds 2. Ties go by name.
+  assert(
+    sameList(ranked, ["banana-peels:3", "eggshells:3", "cardboard:2", "citrus-peels:2"]),
+    `popular items should order by link count, then name, got ${JSON.stringify(ranked)}`,
+  );
+  assert(popular.items.every((item) => item.name && item.categoryName), "popular items should carry item fields");
+  const byDefault = await json<PopularListing>(await app.request("/items?popular=1"));
+  assert(
+    byDefault.items.length > 4 && byDefault.items.length <= 20,
+    `popular should default to at most 20 items, got ${byDefault.items.length}`,
+  );
+  const plain = await json<{ items: { name: string }[] }>(await app.request("/items"));
+  const names = plain.items.map((item) => item.name);
+  assert(sameList(names, [...names].sort((a, b) => a.localeCompare(b))), "plain /items should stay sorted by name");
+}
+
 const reuse = await json<{ pointsAwarded: number; badgesUnlocked: { slug: string }[] }>(
   await app.request("/logs", {
     method: "POST",
@@ -112,7 +377,7 @@ const reuse = await json<{ pointsAwarded: number; badgesUnlocked: { slug: string
       profileId: "person-1",
       itemId: "banana-peels",
       action: "reuse",
-      ideaId: detail.ideas[0].id,
+      ideaId: sharedIdeas.banana.id,
     }),
   }),
 );
@@ -137,13 +402,12 @@ const compost = await json<{ pointsAwarded: number }>(
 );
 assert(compost.pointsAwarded === 5, "compost should be 5 points");
 
-for (const itemId of ["citrus-peels", "eggshells", "pet-bottles", "aluminum-cans"]) {
-  const item = await json<{ ideas: { id: string }[] }>(await app.request(`/items/${itemId}`));
+for (const shared of [sharedIdeas.citrus, sharedIdeas.eggshells, sharedIdeas.bottles, sharedIdeas.cans]) {
   await json(
     await app.request("/logs", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ profileId: "person-1", itemId, action: "reuse", ideaId: item.ideas[0].id }),
+      body: JSON.stringify({ profileId: "person-1", itemId: shared.itemId, action: "reuse", ideaId: shared.id }),
     }),
   );
 }
@@ -560,7 +824,11 @@ const ideaCount = (target: DatabaseSync) =>
   const countBefore = ideaCount(before);
   before.close();
 
-  const migrated = openDatabase(file);
+  // Called directly: openDatabase also runs the fresh-start migration, which deletes every Idea.
+  const migrated = new DatabaseSync(file);
+  migrated.exec("PRAGMA foreign_keys = ON");
+  const firstRun = migrateIdeaKinds(migrated, file);
+  assert(firstRun.migrated, "old database should be migrated");
   const sql = ideasSql(migrated);
   for (const kind of NEW_KINDS) assert(sql.includes(`'${kind}'`), `migrated ideas CHECK should list ${kind}`);
   assert(!sql.includes("'cook'") && !sql.includes("'useful'"), "migrated ideas CHECK should drop the old kinds");
@@ -590,27 +858,13 @@ const ideaCount = (target: DatabaseSync) =>
   assert(ideaCount(backup) === countBefore, "backup should hold every pre-migration idea");
   backup.close();
 
-  const migratedImages = ensureImagesDir(path.join(dir, "idea-images"));
-  fs.writeFileSync(path.join(migratedImages, `${PICTURED_IDEA_ID}.png`), Buffer.from(TINY_PNG_BASE64, "base64"));
-  const migratedApp = createApp(migrated, migratedImages, ensureImagesDir(path.join(dir, "item-images")));
-  const tinCans = await json<{ ideas: { id: string; kind: string; imageUrl: string | null }[] }>(
-    await migratedApp.request("/items/tin-cans"),
-  );
-  const picturedIdea = tinCans.ideas.find((idea) => idea.id === PICTURED_IDEA_ID);
-  assert(picturedIdea?.kind === "home" && picturedIdea.imageUrl, "migrated idea should keep its imageUrl");
-  const migratedImage = await migratedApp.request(picturedIdea.imageUrl);
-  assert(migratedImage.status === 200, "migrated idea image should still resolve");
-  const migratedCook = await json<IdeaListing>(await migratedApp.request("/ideas?kind=cook"));
-  assert(
-    migratedCook.ideas.length === 2 && migratedCook.ideas.every((idea) => idea.kind === "kitchen"),
-    `kind=cook should list the migrated kitchen ideas, got ${migratedCook.ideas.length}`,
-  );
   const rowsAfterFirst = ideaRows(migrated);
   migrated.close();
 
-  const reopened = openDatabase(file);
-  assert(backupsIn(dir).length === 1, "second open should not write another backup");
-  assert(ideaRows(reopened) === rowsAfterFirst, "second open should leave ideas unchanged");
+  const reopened = new DatabaseSync(file);
+  assert(!migrateIdeaKinds(reopened, file).migrated, "second run should be skipped");
+  assert(backupsIn(dir).length === 1, "second run should not write another backup");
+  assert(ideaRows(reopened) === rowsAfterFirst, "second run should leave ideas unchanged");
   reopened.close();
 }
 
@@ -621,11 +875,65 @@ const ideaCount = (target: DatabaseSync) =>
   const columns = (migrated.prepare("PRAGMA table_info(ideas)").all() as { name: string }[]).map((column) => column.name);
   assert(columns.includes("image_filename"), "migrated ideas should have image_filename");
   assert(ideasSql(migrated).includes("'kitchen'"), "imageless old database should migrate");
-  for (const [id, , , expected] of OLD_ALL) {
-    const row = migrated.prepare("SELECT kind FROM ideas WHERE id = ?").get(id) as { kind: string } | undefined;
-    assert(row?.kind === expected, `imageless: ${id} should become ${expected}, got ${row?.kind}`);
-  }
+  assert(ideaCount(migrated) === 0, "imageless old database should end with no ideas after the fresh start");
   migrated.close();
+}
+
+{
+  // Fresh start: every Idea, Ingredient link and idea image is deleted. Log entries and points stay.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "recycler-fresh-start-"));
+  const file = buildOldDatabase(dir, { withImageColumn: true });
+  const images = ensureImagesDir(path.join(dir, "idea-images"));
+  const png = Buffer.from(TINY_PNG_BASE64, "base64");
+  fs.writeFileSync(path.join(images, `${PICTURED_IDEA_ID}.png`), png);
+  fs.writeFileSync(path.join(images, "orphan.png"), png);
+
+  const freshDb = openDatabase(file, images);
+  assert(ideaCount(freshDb) === 0, `fresh start should delete every idea, got ${ideaCount(freshDb)}`);
+  const links = Number((freshDb.prepare("SELECT COUNT(*) AS n FROM idea_ingredients").get() as { n: number }).n);
+  assert(links === 0, "fresh start should leave no ingredient links");
+  const logs = freshDb.prepare("SELECT idea_id FROM log_entries").all() as { idea_id: string | null }[];
+  assert(logs.length === 5, `fresh start should keep every log entry, got ${logs.length}`);
+  assert(logs.every((row) => row.idea_id === null), "fresh start should clear the idea on log entries");
+  assert(fs.readdirSync(images).length === 0, `fresh start should delete idea images, left ${fs.readdirSync(images)}`);
+  assert(freshDb.prepare("PRAGMA foreign_key_check").all().length === 0, "fresh start should leave no FK violations");
+
+  const freshApp = createApp(freshDb, images, ensureImagesDir(path.join(dir, "item-images")));
+  const maker = await json<{ points: number; counts: { reuses: number } }>(await freshApp.request("/profiles/maker-1"));
+  assert(maker.points === 40, `fresh start should keep points, got ${maker.points}`);
+  assert(maker.counts.reuses === 5, `fresh start should keep reuse counts, got ${maker.counts.reuses}`);
+  const freshIdeas = await json<IdeaListing>(await freshApp.request("/ideas"));
+  assert(freshIdeas.ideas.length === 0, "fresh start should list no ideas");
+
+  const shared = await json<{ idea: { id: string } }>(
+    await freshApp.request("/submissions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        profileId: "maker-1",
+        category: "plastic",
+        itemName: "tin-cans",
+        ideaKind: "home",
+        title: "After the fresh start",
+        materials: "A can",
+        steps: ["Rinse it."],
+        ingredientIds: ["glass-jars"],
+        image: { mime: "image/png", data: TINY_PNG_BASE64 },
+      }),
+    }),
+  );
+  freshDb.close();
+
+  const reopened = openDatabase(file, images);
+  assert(ideaCount(reopened) === 1, "the fresh start should run only once");
+  const reopenedApp = createApp(reopened, images, ensureImagesDir(path.join(dir, "item-images")));
+  const kept = await json<IdeaDetail>(await reopenedApp.request(`/ideas/${shared.idea.id}`));
+  assert(
+    sameList(kept.idea.ingredients.map((ingredient) => ingredient.id), ["tin-cans", "glass-jars"]),
+    `links made after the fresh start should survive a reopen, got ${JSON.stringify(kept.idea.ingredients)}`,
+  );
+  assert(fs.readdirSync(images).length === 1, "images made after the fresh start should survive a reopen");
+  reopened.close();
 }
 
 {

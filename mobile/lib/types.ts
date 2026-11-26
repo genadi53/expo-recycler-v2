@@ -14,6 +14,9 @@ export type ItemSummary = {
   imageUrl: string | null;
 };
 
+/** An Item from `GET /items?popular=1`, with how many published Ideas list it as a Key Ingredient. */
+export type PopularItem = ItemSummary & { ideaCount: number };
+
 /** Idea kinds (the six Againful brand categories), in display order. Mirrors the server's IDEA_KINDS. */
 export const IDEA_KINDS = ["kitchen", "beauty", "cleaning", "garden", "home", "crafts"] as const;
 export type IdeaKind = (typeof IDEA_KINDS)[number];
@@ -146,4 +149,31 @@ export type SubmissionResult = {
   pointsAwarded: number;
   points: number;
   badgesUnlocked: UnlockedBadge[];
+};
+
+/** How many of a Match's Key Ingredients are missing: none, one, or two or more (see GLOSSARY.md, "Match"). */
+export type MatchTier = "now" | "almost" | "later";
+
+/** An Idea from `GET /matches` that uses at least one Ingredient from the Ingredient list. */
+export type Match = IdeaSummary & {
+  createdAt: string;
+  /** Key Ingredients already in the list. */
+  have: number;
+  /** All Key Ingredients the Idea needs. */
+  need: number;
+  /** Names of the Key Ingredients not in the list. */
+  missing: string[];
+  tier: MatchTier;
+};
+
+/** An Ingredient: an Item, by id, with its display name. Used both for the Ingredient list and for an Idea's Key Ingredients (see GLOSSARY.md). */
+export type Ingredient = { id: string; name: string };
+
+/** An Idea from `GET /ideas/:id`, with its Item and its Key Ingredients (its own Item first). */
+export type IdeaDetail = Idea & {
+  itemId: string;
+  itemName: string;
+  categoryName: string;
+  createdAt: string;
+  ingredients: Ingredient[];
 };
