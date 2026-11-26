@@ -13,7 +13,7 @@ const host = process.env.HOST ?? "0.0.0.0";
 const databasePath = resolveDatabasePath();
 const imagesDir = ensureImagesDir(resolveImagesDir(databasePath));
 const itemImagesDir = ensureImagesDir(resolveItemImagesDir(databasePath));
-const db = openDatabase(databasePath);
+const db = openDatabase(databasePath, imagesDir);
 const app = createApp(db, imagesDir, itemImagesDir);
 
 serve({ fetch: app.fetch, port, hostname: host }, (info) => {

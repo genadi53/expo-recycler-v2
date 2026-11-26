@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { migrateFreshStart } from "./migrateFreshStart.js";
 import { ideasTableSql, migrateIdeaKinds } from "./migrateIdeaKinds.js";
 import { seedIfEmpty } from "./seed.js";
 
@@ -34,6 +35,15 @@ CREATE TABLE IF NOT EXISTS items (
 CREATE UNIQUE INDEX IF NOT EXISTS items_name_lower ON items(lower(name));
 
 ${ideasTableSql("ideas", true)};
+
+-- The Items an Idea needs (its Key Ingredients). The Idea's own Item is always one of them.
+CREATE TABLE IF NOT EXISTS idea_ingredients (
+  idea_id TEXT NOT NULL REFERENCES ideas(id),
+  item_id TEXT NOT NULL REFERENCES items(id),
+  PRIMARY KEY (idea_id, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idea_ingredients_item ON idea_ingredients(item_id);
 
 CREATE TABLE IF NOT EXISTS disposals (
   id TEXT PRIMARY KEY,
@@ -117,7 +127,10 @@ export function ensureImagesDir(imagesDir: string): string {
   return imagesDir;
 }
 
-export function openDatabase(file = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "recycler.db")): DB {
+export function openDatabase(
+  file = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "recycler.db"),
+  ideaImagesDir: string | null = null,
+): DB {
   if (file !== ":memory:") {
     fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
   }
@@ -133,6 +146,8 @@ export function openDatabase(file = process.env.DATABASE_PATH ?? path.join(proce
     migrateIdeasImageColumn(db);
     migrateItemsImageColumn(db);
     migrateIdeaKinds(db, file);
+    // After the idea-kinds rebuild: wipes every Idea once (ADR 0001), then the seed adds none.
+    migrateFreshStart(db, ideaImagesDir);
     seedIfEmpty(db);
   } catch (error) {
     db.close();
