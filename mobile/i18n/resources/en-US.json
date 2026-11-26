@@ -139,7 +139,6 @@
     "loading": "Loading recipes…",
     "emptyTitle": "No recipes yet",
     "emptyBody": "Share a kitchen idea from Submit and it shows up here right away.",
-    "picture": "{{title}} picture",
     "lead": "Kitchen ideas from the shared catalog. Open one to see steps on the item."
   },
   "log": {

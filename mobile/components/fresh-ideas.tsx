@@ -1,15 +1,15 @@
 import { homeCardShadow } from "@/components/home-action-card";
+import { IdeaImage } from "@/components/idea-image";
 import { IdeaKindLabel } from "@/components/idea-kind-label";
 import { colors, serif } from "@/components/theme";
-import { ideaKindMeta } from "@/constants/idea-kinds";
-import { absoluteApiUrl, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { kindLabel } from "@/lib/format";
 import type { IdeaSummary } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
@@ -93,8 +93,6 @@ export function FreshIdeas({ limit = 6, testID = "fresh-ideas" }: { limit?: numb
 
 function IdeaCard({ idea }: { idea: IdeaSummary }) {
   const { t } = useTranslation();
-  const imageUri = absoluteApiUrl(idea.imageUrl);
-  const meta = ideaKindMeta(idea.kind);
 
   return (
     <Pressable
@@ -104,16 +102,11 @@ function IdeaCard({ idea }: { idea: IdeaSummary }) {
       style={({ pressed }) => [styles.card, pressed && styles.pressed, pointer]}
       testID={`fresh-idea-${idea.id}`}
     >
-      <View style={[styles.image, { backgroundColor: meta?.accent ?? colors.green }]}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" accessible={false} />
-        ) : (
-          <Ionicons name={meta?.icon ?? "bulb-outline"} size={56} color={colors.card} />
-        )}
+      <IdeaImage kind={idea.kind} imageUrl={idea.imageUrl} style={styles.image} iconSize={56}>
         <View style={styles.pill}>
           <IdeaKindLabel kind={idea.kind} style={styles.pillText} iconSize={14} />
         </View>
-      </View>
+      </IdeaImage>
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={2}>
           {idea.title}
@@ -145,9 +138,6 @@ const styles = StyleSheet.create({
     height: IMAGE_HEIGHT,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
   },
   pill: {
     position: "absolute",

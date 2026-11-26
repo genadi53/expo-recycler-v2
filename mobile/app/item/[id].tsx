@@ -1,3 +1,4 @@
+import { IdeaImage } from "@/components/idea-image";
 import { IdeaKindLabel } from "@/components/idea-kind-label";
 import { LogAction } from "@/components/log-action";
 import { categoryAccent, colors, serif } from "@/components/theme";
@@ -86,16 +87,14 @@ export default function ItemScreen() {
 function IdeaCard({ idea }: { idea: Idea }) {
   const { t } = useTranslation();
   const materials = idea.materials.split("\n").map((line) => line.trim()).filter(Boolean);
-  const imageUri = absoluteApiUrl(idea.imageUrl);
   return (
     <View style={styles.card}>
-      {imageUri ? (
-        <Image
-          source={{ uri: imageUri }}
-          style={styles.ideaImage}
-          accessibilityLabel={t("item.picture", { name: idea.title })}
-        />
-      ) : null}
+      <IdeaImage
+        kind={idea.kind}
+        imageUrl={idea.imageUrl}
+        style={styles.ideaImage}
+        accessibilityLabel={t("item.picture", { name: idea.title })}
+      />
       <IdeaKindLabel kind={idea.kind} style={styles.kind} />
       <Text style={styles.cardTitle}>{idea.title}</Text>
       {idea.authorName ? <Text style={styles.meta}>{t("item.sharedBy", { name: idea.authorName })}</Text> : null}
@@ -145,7 +144,6 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 12,
     marginBottom: 4,
-    backgroundColor: colors.line,
   },
   kind: { color: colors.green, fontSize: 12, fontWeight: "800", letterSpacing: 0.5, textTransform: "uppercase" },
   cardTitle: { fontSize: 18, fontWeight: "700", color: colors.ink },
