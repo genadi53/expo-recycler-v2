@@ -13,14 +13,23 @@ export function LogAction({
   itemId,
   ideas,
   logMethods,
+  initialMode = null,
+  reuseOnly = false,
+  onCancel,
 }: {
   itemId: string;
   ideas: Idea[];
   logMethods: LogMethod[];
+  /** Opens straight into a panel, e.g. "reuse" when the person just finished making an Idea. */
+  initialMode?: "reuse" | "dispose" | null;
+  /** Hides the dispose action (logging a reuse of a specific Idea). */
+  reuseOnly?: boolean;
+  /** Called after Cancel closes the panel, so the caller can put its own controls back. */
+  onCancel?: () => void;
 }) {
   const { t } = useTranslation();
   const { profile, refresh } = useProfile();
-  const [mode, setMode] = useState<"reuse" | "dispose" | null>(null);
+  const [mode, setMode] = useState<"reuse" | "dispose" | null>(initialMode);
   const [ideaId, setIdeaId] = useState(ideas[0]?.id ?? "");
   const [method, setMethod] = useState(logMethods.find((entry) => entry.recommended)?.method ?? logMethods[0]?.method ?? "");
   const [saving, setSaving] = useState(false);
@@ -80,13 +89,15 @@ export function LogAction({
             disabled={ideas.length === 0}
             testID="reuse-button"
           />
-          <Button
-            label={t("logAction.iDisposed")}
-            tone="secondary"
-            onPress={() => open("dispose")}
-            disabled={logMethods.length === 0}
-            testID="dispose-button"
-          />
+          {reuseOnly ? null : (
+            <Button
+              label={t("logAction.iDisposed")}
+              tone="secondary"
+              onPress={() => open("dispose")}
+              disabled={logMethods.length === 0}
+              testID="dispose-button"
+            />
+          )}
           {ideas.length === 0 ? (
             <Text style={styles.hint}>{t("logAction.noIdeasHint")}</Text>
           ) : null}
@@ -143,7 +154,15 @@ export function LogAction({
               disabled={(mode === "reuse" ? !ideaId : !method) || !profile}
               testID="confirm-log"
             />
-            <Button label={t("common.cancel")} tone="quiet" onPress={() => setMode(null)} disabled={saving} />
+            <Button
+              label={t("common.cancel")}
+              tone="quiet"
+              onPress={() => {
+                setMode(null);
+                onCancel?.();
+              }}
+              disabled={saving}
+            />
           </View>
         </View>
       )}

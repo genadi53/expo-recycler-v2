@@ -434,5 +434,27 @@
     "actionOther": "{{count}} действия през последната година",
     "less": "По-малко",
     "more": "Повече"
+  },
+  "idea": {
+    "title": "Идея",
+    "loading": "Отваряне на идеята…",
+    "openFailed": "Не можахме да отворим тази идея.",
+    "fromItem": "От {{item}}",
+    "ingredients": "Съставки",
+    "inYourList": "{{have}} от {{total}} в списъка ти",
+    "inList": "В списъка ти",
+    "missing": "Липсва",
+    "alsoNeed": "Ще ти трябва още: {{materials}}",
+    "steps": "Стъпки",
+    "stepA11y": "Стъпка {{number}}: {{text}}",
+    "startMaking": "Започни"
+  },
+  "make": {
+    "stepOf": "Стъпка {{current}} от {{total}}",
+    "nextLabel": "Следва ·",
+    "back": "Назад",
+    "nextStep": "Следваща стъпка",
+    "iMadeIt": "Направих го",
+    "noSteps": "Тази идея все още няма стъпки."
   }
 }

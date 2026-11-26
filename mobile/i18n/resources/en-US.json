@@ -434,5 +434,27 @@
     "actionOther": "{{count}} actions in the last year",
     "less": "Less",
     "more": "More"
+  },
+  "idea": {
+    "title": "Idea",
+    "loading": "Opening the idea…",
+    "openFailed": "We couldn't open this idea.",
+    "fromItem": "From {{item}}",
+    "ingredients": "Ingredients",
+    "inYourList": "{{have}} of {{total}} in your list",
+    "inList": "In your list",
+    "missing": "Missing",
+    "alsoNeed": "You'll also need: {{materials}}",
+    "steps": "Steps",
+    "stepA11y": "Step {{number}}: {{text}}",
+    "startMaking": "Start making"
+  },
+  "make": {
+    "stepOf": "Step {{current}} of {{total}}",
+    "nextLabel": "Next ·",
+    "back": "Back",
+    "nextStep": "Next step",
+    "iMadeIt": "I made it",
+    "noSteps": "This idea has no steps yet."
   }
 }

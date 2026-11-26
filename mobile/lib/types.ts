@@ -150,3 +150,15 @@ export type SubmissionResult = {
   points: number;
   badgesUnlocked: UnlockedBadge[];
 };
+
+/** One Key Ingredient of an Idea: a linked Item. */
+export type IdeaIngredient = { id: string; name: string };
+
+/** An Idea from `GET /ideas/:id`, with its Item and its Key Ingredients (its own Item first). */
+export type IdeaDetail = Idea & {
+  itemId: string;
+  itemName: string;
+  categoryName: string;
+  createdAt: string;
+  ingredients: IdeaIngredient[];
+};
