@@ -1,4 +1,4 @@
-import { RecipeTile } from "@/components/recipe-grid";
+import { PrototypeRecipeTile, PrototypeSwitcher } from "@/components/recipe-tile.prototype";
 import { colors } from "@/components/theme";
 import { EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -11,6 +11,7 @@ export default function RecipesScreen() {
   const { status, data, error, retry } = useQuery("recipes", () => api.ideas({ kind: "kitchen" }));
 
   return (
+    <>
     <Screen title={t("recipes.title")} back>
       <Text style={styles.lead}>{t("recipes.lead")}</Text>
 
@@ -21,14 +22,16 @@ export default function RecipesScreen() {
       ) : null}
       {status === "ready" && data && data.ideas.length > 0 ? (
         <View style={styles.grid} testID="recipes-grid">
-          {data.ideas.map((recipe) => (
+          {data.ideas.map((recipe, index) => (
             <View key={recipe.id} style={styles.slot}>
-              <RecipeTile recipe={recipe} />
+              <PrototypeRecipeTile recipe={recipe} index={index} />
             </View>
           ))}
         </View>
       ) : null}
     </Screen>
+    <PrototypeSwitcher />
+    </>
   );
 }
 
