@@ -188,18 +188,38 @@
     "city": "City",
     "world": "World"
   },
-  "browse": {
-    "title": "Browse",
-    "tagline": "What do you have, and can it be reused?",
-    "note": "A shared catalog for households. No account.",
-    "placeholder": "Banana peels, jars, cans…",
-    "hint": "Type what you have.",
-    "search": "Search the catalog",
-    "orMaterial": "Or start with a material",
+  "ingredients": {
+    "searchPlaceholder": "Banana peel, oats, jars…",
+    "clearSearch": "Clear search",
+    "searching": "Searching…",
+    "noResults": "Nothing in the catalog matches “{{q}}”.",
+    "add": "Add {{name}}",
+    "inList": "{{name}}, already in your list",
+    "remove": "{{name}}, remove"
+  },
+  "builder": {
+    "title": "Ingredient list",
+    "headline": "What do you ",
+    "headlineEm": "have at home?",
+    "subline": "Add what you have and we’ll find what you can make.",
+    "yourList": "Your list · {{count}}",
+    "clear": "Clear",
+    "emptyList": "Nothing yet. Search, tap a popular ingredient, or browse by material.",
+    "popular": "Popular",
+    "byMaterial": "Browse by material",
     "loading": "Looking through the catalog…",
     "noCategories": "No categories yet.",
-    "itemCount": "{{count}} item",
-    "itemCount_other": "{{count}} items"
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "cantFind": "Can’t find it?",
+    "suggest": "Suggest it →",
+    "find": "Find what I can make →",
+    "findHint": "Add at least one ingredient first."
+  },
+  "categorySheet": {
+    "loading": "Loading items…",
+    "empty": "No items in this material yet.",
+    "done": "Done"
   },
   "results": {
     "title": "Results",

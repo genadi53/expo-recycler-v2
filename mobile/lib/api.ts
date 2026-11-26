@@ -6,6 +6,7 @@ import type {
   IdeaSummary,
   ItemDetail,
   ItemSummary,
+  PopularItem,
   Leaderboard,
   LogResult,
   ProfileSnapshot,
@@ -68,6 +69,8 @@ export const api = {
     const query = search.toString();
     return request<{ items: ItemSummary[] }>(`/items${query ? `?${query}` : ""}`);
   },
+  /** Items ordered by how many Ideas list them as Key Ingredients (the builder's Popular chips). */
+  popularItems: (limit = 12) => request<{ items: PopularItem[] }>(`/items?popular=1&limit=${limit}`),
   item: (id: string) => request<ItemDetail>(`/items/${encodeURIComponent(id)}`),
   ideas: (params: { kind?: IdeaKind; limit?: number } = {}) => {
     const search = new URLSearchParams();
