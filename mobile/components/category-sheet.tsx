@@ -3,8 +3,7 @@ import { categoryAccent, colors, serif } from "@/components/theme";
 import { ErrorState, LoadingState } from "@/components/ui";
 import { api } from "@/lib/api";
 import { categoryLabel } from "@/lib/format";
-import type { Ingredient } from "@/lib/ingredient-list";
-import type { Category } from "@/lib/types";
+import type { Category, Ingredient } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -132,7 +131,7 @@ function SheetBody({
 
 const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFill, zIndex: 20, justifyContent: "flex-end" },
-  dim: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(28, 25, 21, 0.45)" },
+  dim: { ...StyleSheet.absoluteFill, backgroundColor: colors.scrim },
   sheet: {
     backgroundColor: colors.bg,
     borderTopLeftRadius: 28,

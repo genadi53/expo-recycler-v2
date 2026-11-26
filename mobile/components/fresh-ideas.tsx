@@ -4,6 +4,7 @@ import { IdeaKindLabel } from "@/components/idea-kind-label";
 import { colors, serif } from "@/components/theme";
 import { api } from "@/lib/api";
 import { kindLabel } from "@/lib/format";
+import { ideaHref } from "@/lib/idea-route";
 import type { IdeaSummary } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -97,7 +98,7 @@ function IdeaCard({ idea }: { idea: IdeaSummary }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("home.ideaA11y", { title: idea.title, kind: kindLabel(idea.kind), item: idea.itemName })}
-      onPress={() => router.push(`/idea/${encodeURIComponent(idea.id)}` as Href)}
+      onPress={() => router.push(ideaHref(idea.id))}
       style={({ pressed }) => [styles.card, pressed && styles.pressed, pointer]}
       testID={`fresh-idea-${idea.id}`}
     >

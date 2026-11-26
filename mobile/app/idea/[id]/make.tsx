@@ -3,10 +3,11 @@ import { colors, serif } from "@/components/theme";
 import { EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { ingredientsInStep } from "@/lib/idea-detail";
+import { ideaHref } from "@/lib/idea-route";
 import type { IdeaDetail } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams, type Href } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -47,7 +48,7 @@ export default function StartMakingScreen() {
 
 function close(ideaId: string) {
   if (router.canGoBack()) router.back();
-  else router.replace(`/idea/${encodeURIComponent(ideaId)}` as Href);
+  else router.replace(ideaHref(ideaId));
 }
 
 function Steps({ idea }: { idea: IdeaDetail }) {

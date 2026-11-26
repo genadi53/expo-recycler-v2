@@ -1,7 +1,5 @@
+import type { Ingredient } from "@/lib/types";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-
-/** One Ingredient in the Ingredient list: an Item, by id, with its display name. */
-export type Ingredient = { id: string; name: string };
 
 export type IngredientList = {
   /** The picked Ingredients, in the order they were added. */

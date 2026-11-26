@@ -190,6 +190,40 @@ type IdeaRow = {
   author_name: string | null;
 };
 
+/** A published Idea joined with its own published Item, Category and author. Append WHERE/ORDER BY. */
+const PUBLISHED_IDEA_SELECT = `
+  SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.steps, ideas.image_filename,
+         ideas.created_at, i.id AS itemId, i.name AS itemName, c.name AS categoryName,
+         profiles.display_name AS authorName
+  FROM ideas
+  JOIN items i ON i.id = ideas.item_id AND i.status = 'published'
+  JOIN categories c ON c.id = i.category_id
+  LEFT JOIN profiles ON profiles.id = ideas.author_profile_id
+  WHERE ideas.status = 'published'`;
+
+type PublishedIdeaRow = {
+  id: string;
+  kind: string;
+  title: string;
+  materials: string;
+  steps: string;
+  image_filename: string | null;
+  created_at: string;
+  itemId: string;
+  itemName: string;
+  categoryName: string;
+  authorName: string | null;
+};
+
+/** An Idea's published Ingredients (`?` = idea id). Append ORDER BY. */
+const IDEA_INGREDIENTS_SELECT = `
+  SELECT i.id, i.name
+  FROM idea_ingredients link
+  JOIN items i ON i.id = link.item_id AND i.status = 'published'
+  WHERE link.idea_id = ?`;
+
+type IdeaIngredientRow = { id: string; name: string };
+
 function decodeIdeaImage(image: { mime: ImageMime; data: string }): { buffer: Buffer; ext: string; mime: ImageMime } {
   const cleaned = image.data.replace(/^data:[^;]+;base64,/, "").replace(/\s+/g, "");
   if (!cleaned) throw new HttpError(400, "Picture data is required.");
@@ -478,16 +512,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
     }
     if (isLegacyIdeaKind(kind)) recordIdeaKindAlias("filter", kind);
     const params: string[] = [];
-    let sql = `
-      SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.image_filename,
-             ideas.created_at, i.id AS itemId, i.name AS itemName, c.name AS categoryName,
-             profiles.display_name AS authorName
-      FROM ideas
-      JOIN items i ON i.id = ideas.item_id AND i.status = 'published'
-      JOIN categories c ON c.id = i.category_id
-      LEFT JOIN profiles ON profiles.id = ideas.author_profile_id
-      WHERE ideas.status = 'published'
-    `;
+    let sql = PUBLISHED_IDEA_SELECT;
     if (kinds) {
       sql += ` AND ideas.kind IN (${kinds.map(() => "?").join(", ")})`;
       params.push(...kinds);
@@ -495,17 +520,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
     sql += " ORDER BY ideas.created_at DESC, ideas.rowid DESC";
     if (limit) sql += ` LIMIT ${limit}`;
     const ideas = (
-      db.prepare(sql).all(...params) as {
-        id: string;
-        kind: string;
-        title: string;
-        materials: string;
-        image_filename: string | null;
-        itemId: string;
-        itemName: string;
-        categoryName: string;
-        authorName: string | null;
-      }[]
+      db.prepare(sql).all(...params) as PublishedIdeaRow[]
     ).map((idea) => ({
       id: idea.id,
       kind: idea.kind,
@@ -532,47 +547,23 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
     const haveIds = [...have];
     const ideas = db
       .prepare(
-        `SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.image_filename, ideas.created_at,
-                i.id AS itemId, i.name AS itemName, c.name AS categoryName,
-                profiles.display_name AS authorName
-         FROM ideas
-         JOIN items i ON i.id = ideas.item_id AND i.status = 'published'
-         JOIN categories c ON c.id = i.category_id
-         LEFT JOIN profiles ON profiles.id = ideas.author_profile_id
-         WHERE ideas.status = 'published'
+        `${PUBLISHED_IDEA_SELECT}
            AND EXISTS (
              SELECT 1 FROM idea_ingredients link
              WHERE link.idea_id = ideas.id AND link.item_id IN (${haveIds.map(() => "?").join(", ")})
            )
          ORDER BY ideas.created_at DESC, ideas.rowid DESC`,
       )
-      .all(...haveIds) as {
-      id: string;
-      kind: string;
-      title: string;
-      materials: string;
-      image_filename: string | null;
-      created_at: string;
-      itemId: string;
-      itemName: string;
-      categoryName: string;
-      authorName: string | null;
-    }[];
-    const ingredientsOf = db.prepare(
-      `SELECT i.id, i.name
-       FROM idea_ingredients link
-       JOIN items i ON i.id = link.item_id AND i.status = 'published'
-       WHERE link.idea_id = ?
-       ORDER BY i.name COLLATE NOCASE`,
-    );
+      .all(...haveIds) as PublishedIdeaRow[];
+    const ingredientsOf = db.prepare(`${IDEA_INGREDIENTS_SELECT} ORDER BY i.name COLLATE NOCASE`);
     const TIER_ORDER = { now: 0, almost: 1, later: 2 } as const;
     const matches = ideas
-      .map((idea, newest) => {
-        const ingredients = ingredientsOf.all(idea.id) as { id: string; name: string }[];
+      .map((idea, recencyRank) => {
+        const ingredients = ingredientsOf.all(idea.id) as IdeaIngredientRow[];
         const missing = ingredients.filter((ingredient) => !have.has(ingredient.id)).map((ingredient) => ingredient.name);
         const tier: keyof typeof TIER_ORDER = missing.length === 0 ? "now" : missing.length === 1 ? "almost" : "later";
         return {
-          newest,
+          recencyRank,
           match: {
             id: idea.id,
             kind: idea.kind,
@@ -593,7 +584,7 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
       })
       .sort(
         (a, b) =>
-          TIER_ORDER[a.match.tier] - TIER_ORDER[b.match.tier] || b.match.have - a.match.have || a.newest - b.newest,
+          TIER_ORDER[a.match.tier] - TIER_ORDER[b.match.tier] || b.match.have - a.match.have || a.recencyRank - b.recencyRank,
       )
       .map((entry) => entry.match);
     return c.json({ matches });
@@ -601,42 +592,13 @@ export function createApp(db: DB, imagesDir: string, itemImagesDir = imagesDir) 
 
   app.get("/ideas/:id", (c) => {
     const idea = db
-      .prepare(
-        `SELECT ideas.id, ideas.kind, ideas.title, ideas.materials, ideas.steps, ideas.image_filename,
-                ideas.created_at, i.id AS itemId, i.name AS itemName, c.name AS categoryName,
-                profiles.display_name AS authorName
-         FROM ideas
-         JOIN items i ON i.id = ideas.item_id AND i.status = 'published'
-         JOIN categories c ON c.id = i.category_id
-         LEFT JOIN profiles ON profiles.id = ideas.author_profile_id
-         WHERE ideas.id = ? AND ideas.status = 'published'`,
-      )
-      .get(c.req.param("id")) as
-      | {
-          id: string;
-          kind: string;
-          title: string;
-          materials: string;
-          steps: string;
-          image_filename: string | null;
-          created_at: string;
-          itemId: string;
-          itemName: string;
-          categoryName: string;
-          authorName: string | null;
-        }
-      | undefined;
+      .prepare(`${PUBLISHED_IDEA_SELECT} AND ideas.id = ?`)
+      .get(c.req.param("id")) as PublishedIdeaRow | undefined;
     if (!idea) throw new HttpError(404, "No idea with that id.");
     // The Idea's own Item first, then the other Key Ingredients by name.
     const ingredients = db
-      .prepare(
-        `SELECT i.id, i.name
-         FROM idea_ingredients link
-         JOIN items i ON i.id = link.item_id AND i.status = 'published'
-         WHERE link.idea_id = ?
-         ORDER BY i.id <> ?, i.name COLLATE NOCASE`,
-      )
-      .all(idea.id, idea.itemId) as { id: string; name: string }[];
+      .prepare(`${IDEA_INGREDIENTS_SELECT} ORDER BY i.id <> ?, i.name COLLATE NOCASE`)
+      .all(idea.id, idea.itemId) as IdeaIngredientRow[];
     return c.json({
       idea: {
         id: idea.id,

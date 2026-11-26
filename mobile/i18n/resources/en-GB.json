@@ -103,7 +103,6 @@
     "freshIdeas": "Fresh ideas",
     "seeAll": "See all",
     "ideasLoading": "Loading ideas…",
-    "ideasEmpty": "No ideas yet — share the first one from the + button.",
     "ideaA11y": "{{title}}, {{kind}}, {{item}}"
   },
   "impact": {
@@ -196,6 +195,7 @@
     "add": "Add {{name}}",
     "ownItem": "{{name}}, this idea’s own item, always included",
     "inList": "{{name}}, already in your list",
+    "alreadyAdded": "{{name}}, already added",
     "remove": "{{name}}, remove"
   },
   "builder": {
@@ -281,7 +281,6 @@
     "noDisposal": "No disposal guidance for this item yet.",
     "disclaimer": "This is general guidance, not a map of local facilities. Rules differ by city, and Againful does not ask where you live.",
     "sharedBy": "Shared by {{name}}",
-    "youllNeed": "You’ll need",
     "picture": "{{name}} picture"
   },
   "logAction": {
@@ -471,6 +470,8 @@
     "inYourList": "{{have}} of {{total}} in your list",
     "inList": "In your list",
     "missing": "Missing",
+    "inListA11y": "{{name}}, in your list",
+    "missingA11y": "{{name}}, missing",
     "alsoNeed": "You'll also need: {{materials}}",
     "steps": "Steps",
     "stepA11y": "Step {{number}}: {{text}}",

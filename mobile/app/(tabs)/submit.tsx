@@ -5,10 +5,9 @@ import { colors, serif } from "@/components/theme";
 import { Banner, Button, Chip, EmptyState, ErrorState, Field, Input, ItemRow, LoadingState, Screen } from "@/components/ui";
 import i18n from "@/i18n";
 import { api } from "@/lib/api";
-import type { Ingredient } from "@/lib/ingredient-list";
 import { categoryLabel, kindLabel } from "@/lib/format";
 import { submitRoute } from "@/lib/submit-route";
-import type { Category, IdeaImagePayload, ItemSummary, SubmissionResult } from "@/lib/types";
+import type { Category, IdeaImagePayload, Ingredient, ItemSummary, SubmissionResult } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams, type Href } from "expo-router";
@@ -719,6 +718,7 @@ function RecipeForm({
             has={hasIngredient}
             onAdd={addIngredient}
             placeholder={t("submit.keyIngredientsPlaceholder")}
+            pickedLabelKey="ingredients.alreadyAdded"
             testID="submit-ingredient-search"
           />
         </View>
