@@ -4,12 +4,15 @@ import { LogAction } from "@/components/log-action";
 import { categoryAccent, colors, serif } from "@/components/theme";
 import { ErrorState, LoadingState, Screen } from "@/components/ui";
 import { absoluteApiUrl, api } from "@/lib/api";
-import { categoryLabel } from "@/lib/format";
+import { categoryLabel, kindLabel } from "@/lib/format";
 import type { Idea } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
-import { useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+
+const pointer = Platform.OS === "web" ? ({ cursor: "pointer" } as const) : null;
 
 export default function ItemScreen() {
   const { t } = useTranslation();
@@ -58,7 +61,7 @@ export default function ItemScreen() {
       {data.ideas.length === 0 ? (
         <Text style={styles.body}>{t("item.noIdeas")}</Text>
       ) : (
-        data.ideas.map((idea) => <IdeaCard key={idea.id} idea={idea} />)
+        data.ideas.map((idea) => <IdeaCard key={idea.id} idea={idea} itemName={data.item.name} />)
       )}
 
       <Text style={styles.section}>{t("item.disposeSection")}</Text>
@@ -84,36 +87,31 @@ export default function ItemScreen() {
   );
 }
 
-function IdeaCard({ idea }: { idea: Idea }) {
+/** An Idea for this Item; opens Idea detail, where the checklist and steps live. */
+function IdeaCard({ idea, itemName }: { idea: Idea; itemName: string }) {
   const { t } = useTranslation();
-  const materials = idea.materials.split("\n").map((line) => line.trim()).filter(Boolean);
   return (
-    <View style={styles.card}>
-      <IdeaImage
-        kind={idea.kind}
-        imageUrl={idea.imageUrl}
-        style={styles.ideaImage}
-        accessibilityLabel={t("item.picture", { name: idea.title })}
-      />
-      <IdeaKindLabel kind={idea.kind} style={styles.kind} />
-      <Text style={styles.cardTitle}>{idea.title}</Text>
-      {idea.authorName ? <Text style={styles.meta}>{t("item.sharedBy", { name: idea.authorName })}</Text> : null}
-      <Text style={styles.meta}>{t("item.youllNeed")}</Text>
-      {materials.length > 1 ? (
-        materials.map((line) => (
-          <Text key={line} style={styles.body}>
-            · {line}
-          </Text>
-        ))
-      ) : (
-        <Text style={styles.body}>{idea.materials}</Text>
-      )}
-      {idea.steps.map((step, index) => (
-        <Text key={step} style={styles.step}>
-          {index + 1}. {step}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t("home.ideaA11y", { title: idea.title, kind: kindLabel(idea.kind), item: itemName })}
+      onPress={() => router.push(`/idea/${encodeURIComponent(idea.id)}` as Href)}
+      style={({ pressed }) => [styles.ideaCard, pressed && styles.pressed, pointer]}
+      testID={`item-idea-${idea.id}`}
+    >
+      <IdeaImage kind={idea.kind} imageUrl={idea.imageUrl} style={styles.ideaImage} iconSize={36} />
+      <View style={styles.ideaBody}>
+        <IdeaKindLabel kind={idea.kind} style={styles.kind} />
+        <Text style={styles.ideaTitle} numberOfLines={2}>
+          {idea.title}
         </Text>
-      ))}
-    </View>
+        {idea.authorName ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {t("item.sharedBy", { name: idea.authorName })}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+    </Pressable>
   );
 }
 
@@ -139,12 +137,20 @@ const styles = StyleSheet.create({
     gap: 6,
     overflow: "hidden",
   },
-  ideaImage: {
-    width: "100%",
-    height: 180,
-    borderRadius: 12,
-    marginBottom: 4,
+  ideaCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 18,
+    padding: 10,
   },
+  ideaImage: { width: 76, height: 76, borderRadius: 14 },
+  ideaBody: { flex: 1, gap: 4 },
+  ideaTitle: { fontFamily: serif, fontSize: 18, lineHeight: 22, color: colors.ink },
+  pressed: { opacity: 0.82 },
   kind: { color: colors.green, fontSize: 12, fontWeight: "800", letterSpacing: 0.5, textTransform: "uppercase" },
   cardTitle: { fontSize: 18, fontWeight: "700", color: colors.ink },
   meta: { color: colors.muted, fontSize: 13, fontWeight: "700" },

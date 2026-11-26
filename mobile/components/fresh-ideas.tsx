@@ -26,6 +26,9 @@ export function FreshIdeas({ limit = 6, testID = "fresh-ideas" }: { limit?: numb
   const { t } = useTranslation();
   const { status, data, error, retry } = useQuery(`fresh-ideas-${limit}`, () => api.ideas({ limit }));
 
+  // No Ideas yet (e.g. right after the fresh start): the whole section hides itself.
+  if (status === "ready" && data && data.ideas.length === 0) return null;
+
   return (
     <View style={styles.section} testID={testID}>
       <View style={styles.head}>
@@ -68,10 +71,6 @@ export function FreshIdeas({ limit = 6, testID = "fresh-ideas" }: { limit?: numb
         </View>
       ) : null}
 
-      {status === "ready" && data && data.ideas.length === 0 ? (
-        <Text style={styles.stateText}>{t("home.ideasEmpty")}</Text>
-      ) : null}
-
       {status === "ready" && data && data.ideas.length > 0 ? (
         <ScrollView
           horizontal
@@ -98,7 +97,7 @@ function IdeaCard({ idea }: { idea: IdeaSummary }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("home.ideaA11y", { title: idea.title, kind: kindLabel(idea.kind), item: idea.itemName })}
-      onPress={() => router.push(`/item/${idea.itemId}` as Href)}
+      onPress={() => router.push(`/idea/${encodeURIComponent(idea.id)}` as Href)}
       style={({ pressed }) => [styles.card, pressed && styles.pressed, pointer]}
       testID={`fresh-idea-${idea.id}`}
     >

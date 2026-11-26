@@ -1,6 +1,7 @@
 import i18n from "@/i18n";
 import type {
   Category,
+  IdeaDetail,
   IdeaImagePayload,
   IdeaKind,
   IdeaSummary,
@@ -107,4 +108,6 @@ export const api = {
     /** Key Ingredient item ids (Idea submissions only). The own Item is always linked server-side. */
     ingredientIds?: string[];
   }) => request<SubmissionResult>("/submissions", { method: "POST", body: JSON.stringify(body) }),
+  /** One published Idea with its Key Ingredients; 404 when there's no such Idea. */
+  idea: (id: string) => request<{ idea: IdeaDetail }>(`/ideas/${encodeURIComponent(id)}`),
 };
