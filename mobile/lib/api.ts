@@ -100,5 +100,7 @@ export const api = {
     disposalNote?: string;
     image?: IdeaImagePayload;
     itemImage?: IdeaImagePayload;
+    /** Key Ingredient item ids (Idea submissions only). The own Item is always linked server-side. */
+    ingredientIds?: string[];
   }) => request<SubmissionResult>("/submissions", { method: "POST", body: JSON.stringify(body) }),
 };
