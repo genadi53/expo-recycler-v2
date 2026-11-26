@@ -26,7 +26,7 @@ export default function HomeScreen() {
         <HomeActionCard
           title={t("home.recipesTitle")}
           body={t("home.recipesBody")}
-          icon="restaurant-outline"
+          icon="bulb-outline"
           onPress={() => router.push("/recipes" as Href)}
           testID="cta-recipes"
         />
