@@ -22,6 +22,8 @@ export const VARIANTS = [
   { key: "A", name: "Compact tile, 96px image" },
   { key: "B", name: "Fresh-ideas card" },
   { key: "C", name: "Full-bleed photo tile" },
+  { key: "D", name: "Full-bleed + kind pill, fixed height" },
+  { key: "E", name: "Card B, fixed height" },
 ] as const;
 
 type PhotosMode = "mixed" | "real" | "none";
@@ -104,12 +106,46 @@ function VariantC({ recipe, source }: TileProps) {
   );
 }
 
+function VariantD({ recipe, source }: TileProps) {
+  return (
+    <Pressable onPress={() => open(recipe)} style={({ pressed }) => [styles.tileC, pressed && styles.pressed, pointer]}>
+      <ImageArea recipe={recipe} source={source} height="100%" iconSize={48}>
+        <View style={styles.pill}>
+          <IdeaKindLabel kind={recipe.kind} style={styles.pillText} iconSize={12} />
+        </View>
+        <View style={[styles.scrim, styles.scrimD]}>
+          <Text style={styles.titleC} numberOfLines={2}>{recipe.title}</Text>
+          <Text style={styles.metaC} numberOfLines={1}>{recipe.itemName}</Text>
+        </View>
+      </ImageArea>
+    </Pressable>
+  );
+}
+
+function VariantE({ recipe, source }: TileProps) {
+  return (
+    <Pressable onPress={() => open(recipe)} style={({ pressed }) => [styles.tileB, styles.tileE, pressed && styles.pressed, pointer]}>
+      <ImageArea recipe={recipe} source={source} height={150} iconSize={44}>
+        <View style={styles.pill}>
+          <IdeaKindLabel kind={recipe.kind} style={styles.pillText} iconSize={12} />
+        </View>
+      </ImageArea>
+      <View style={styles.bodyB}>
+        <Text style={styles.titleB} numberOfLines={2}>{recipe.title}</Text>
+        <Text style={styles.meta} numberOfLines={1}>{recipe.itemName}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 type TileProps = { recipe: IdeaSummary; source: ImageSourcePropType | null };
 
 export function PrototypeRecipeTile({ recipe, index }: { recipe: IdeaSummary; index: number }) {
   const { variant, photos } = useProtoParams();
   const source = sourceFor(recipe, index, photos);
   if (variant === "B") return <VariantB recipe={recipe} source={source} />;
+  if (variant === "D") return <VariantD recipe={recipe} source={source} />;
+  if (variant === "E") return <VariantE recipe={recipe} source={source} />;
   if (variant === "C") return <VariantC recipe={recipe} source={source} />;
   return <VariantA recipe={recipe} source={source} />;
 }
@@ -175,6 +211,8 @@ const styles = StyleSheet.create({
   tileC: { height: 200, borderRadius: 18, overflow: "hidden" },
   scrim: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 12, backgroundColor: "rgba(0,0,0,0.45)" },
   titleC: { fontFamily: serif, fontSize: 17, lineHeight: 20, color: "#fff" },
+  scrimD: { minHeight: 76, justifyContent: "flex-end" },
+  tileE: { height: 240 },
   metaC: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 },
 
   bar: { position: "absolute", left: 0, right: 0, bottom: 24, alignItems: "center" },
