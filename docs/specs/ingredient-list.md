@@ -43,6 +43,7 @@ All screens use the **Bold block** language from the home redesign, with existin
 14. As a person viewing Matches, I want "Edit list" to take me back to my list as I left it.
 15. As a person opening an Idea, I want a checklist showing which Ingredients I have and which are missing, plus the Basics it assumes.
 16. As a person ready to make it, I want "Start making" to show one step at a time with clear progress, and to show what comes next.
+17a. As a person tapping any Idea card (home, Explore ideas, Matches, an Item's page), I want to land on that Idea's detail.
 17. As a person who has finished, I want "I made it" to log the reuse with points and badges as today.
 18. As a person on home, I want "Explore ideas" to show every kind of Idea, with a way to filter by kind.
 19. As a person sharing an Idea, I want to optionally pick its Key Ingredients from the catalog, with the Idea's own Item already included and locked.
@@ -70,6 +71,7 @@ All screens use the **Bold block** language from the home redesign, with existin
 - **Idea detail screen** (new route `/idea/[id]`). It computes the checklist by comparing the linked Ingredients with the store.
 - **Start making** (new route `/idea/[id]/make`, or a full-screen mode of the detail screen; the implementer chooses). "I made it" opens the existing `LogAction` reuse path for that Idea.
 - **Explore ideas**: the recipes screen becomes all-kinds with a kind chip row (All plus six kinds from the idea-kinds registry). The home card's title and body are renamed.
+- **Idea cards everywhere open Idea detail**: the home Fresh ideas carousel, Explore ideas, Matches and the Item screen. The Item screen keeps its disposal guidance and log action, and its Ideas become cards that link to `/idea/[id]`.
 - **Share form**: an optional Key Ingredient picker that reuses the builder's type-ahead and chips.
 - i18n keys are added for en-US, en-GB and bg. The agent drafts the Bulgarian strings and flags them in the PR.
 
@@ -90,4 +92,3 @@ All screens use the **Bold block** language from the home redesign, with existin
 
 - **Prototype (done).** A throwaway, phone-width HTML prototype compared Bold block, Editorial and Basket tray across the four screens. It is kept on the `prototype/ingredient-list` branch (`prototype-ingredient-list.html`), not on main. Verdict: Bold block everywhere, with Basket tray's bordered step cards on Idea detail and its faded "Next ·" card in Start making.
 - **Day one is empty.** After the migration there are no Ideas, so home's Fresh ideas hides itself, and Explore ideas and Matches show "Share the first idea →".
-- **Open question:** whether the home carousel cards and the Item screen's Idea cards should open the new Idea detail instead of the Item screen.
