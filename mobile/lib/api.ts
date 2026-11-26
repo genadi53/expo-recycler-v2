@@ -10,6 +10,7 @@ import type {
   PopularItem,
   Leaderboard,
   LogResult,
+  Match,
   ProfileSnapshot,
   SavedProfile,
   SubmissionResult,
@@ -73,6 +74,9 @@ export const api = {
   /** Items ordered by how many Ideas list them as Key Ingredients (the builder's Popular chips). */
   popularItems: (limit = 12) => request<{ items: PopularItem[] }>(`/items?popular=1&limit=${limit}`),
   item: (id: string) => request<ItemDetail>(`/items/${encodeURIComponent(id)}`),
+  /** Ideas that use at least one of the given Items, sorted by tier, then overlap, then newest. Needs at least one id. */
+  matches: (itemIds: string[]) =>
+    request<{ matches: Match[] }>(`/matches?items=${itemIds.map(encodeURIComponent).join(",")}`),
   ideas: (params: { kind?: IdeaKind; limit?: number } = {}) => {
     const search = new URLSearchParams();
     if (params.kind) search.set("kind", params.kind);

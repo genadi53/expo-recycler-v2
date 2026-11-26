@@ -151,6 +151,21 @@ export type SubmissionResult = {
   badgesUnlocked: UnlockedBadge[];
 };
 
+/** How many of a Match's Key Ingredients are missing: none, one, or two or more (see GLOSSARY.md, "Match"). */
+export type MatchTier = "now" | "almost" | "later";
+
+/** An Idea from `GET /matches` that uses at least one Ingredient from the Ingredient list. */
+export type Match = IdeaSummary & {
+  createdAt: string;
+  /** Key Ingredients already in the list. */
+  have: number;
+  /** All Key Ingredients the Idea needs. */
+  need: number;
+  /** Names of the Key Ingredients not in the list. */
+  missing: string[];
+  tier: MatchTier;
+};
+
 /** One Key Ingredient of an Idea: a linked Item. */
 export type IdeaIngredient = { id: string; name: string };
 
