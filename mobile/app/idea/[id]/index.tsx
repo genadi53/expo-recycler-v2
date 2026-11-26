@@ -4,11 +4,12 @@ import { colors, serif } from "@/components/theme";
 import { ErrorState, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { basicsList, ingredientChecklist, type ChecklistEntry } from "@/lib/idea-detail";
+import { ideaMakeHref } from "@/lib/idea-route";
 import { useIngredientList } from "@/lib/ingredient-list";
 import type { IdeaDetail } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams, type Href } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -124,7 +125,7 @@ function IdeaDetailView({ idea }: { idea: IdeaDetail }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("idea.startMaking")}
-            onPress={() => router.push(`/idea/${encodeURIComponent(idea.id)}/make` as Href)}
+            onPress={() => router.push(ideaMakeHref(idea.id))}
             style={({ pressed }) => [styles.start, pressed && styles.pressed, pointer]}
             testID="start-making"
           >
@@ -143,7 +144,7 @@ function ChecklistRow({ entry }: { entry: ChecklistEntry }) {
     <View
       style={styles.row}
       accessible
-      accessibilityLabel={`${entry.name}, ${entry.inList ? t("idea.inList") : t("idea.missing")}`}
+      accessibilityLabel={t(entry.inList ? "idea.inListA11y" : "idea.missingA11y", { name: entry.name })}
     >
       {entry.inList ? (
         <View style={[styles.mark, styles.markHave]}>

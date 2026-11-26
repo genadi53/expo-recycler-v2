@@ -14,6 +14,8 @@ export const colors = {
   terraSoft: "#fbe3d5",
   danger: "#8d2f2a",
   dangerSoft: "#f8e8e4",
+  /** Dims the screen behind a bottom sheet. */
+  scrim: "rgba(28, 25, 21, 0.45)",
 };
 
 export const serif: TextStyle["fontFamily"] = Platform.select({

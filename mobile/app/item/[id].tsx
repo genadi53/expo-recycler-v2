@@ -5,10 +5,11 @@ import { categoryAccent, colors, serif } from "@/components/theme";
 import { ErrorState, LoadingState, Screen } from "@/components/ui";
 import { absoluteApiUrl, api } from "@/lib/api";
 import { categoryLabel, kindLabel } from "@/lib/format";
+import { ideaHref } from "@/lib/idea-route";
 import type { Idea } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams, type Href } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -94,7 +95,7 @@ function IdeaCard({ idea, itemName }: { idea: Idea; itemName: string }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("home.ideaA11y", { title: idea.title, kind: kindLabel(idea.kind), item: itemName })}
-      onPress={() => router.push(`/idea/${encodeURIComponent(idea.id)}` as Href)}
+      onPress={() => router.push(ideaHref(idea.id))}
       style={({ pressed }) => [styles.ideaCard, pressed && styles.pressed, pointer]}
       testID={`item-idea-${idea.id}`}
     >

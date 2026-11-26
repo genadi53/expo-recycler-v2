@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/components/theme";
 import { api } from "@/lib/api";
-import type { Ingredient } from "@/lib/ingredient-list";
-import type { ItemSummary } from "@/lib/types";
+import type { Ingredient, ItemSummary } from "@/lib/types";
 import { useQuery } from "@/lib/use-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,6 +29,7 @@ export function IngredientTypeahead({
   onAdd,
   onQueryChange,
   placeholder,
+  pickedLabelKey = "ingredients.inList",
   maxResults = 6,
   testID = "ingredient-search",
 }: {
@@ -38,6 +38,8 @@ export function IngredientTypeahead({
   /** Called with the trimmed text whenever it changes (e.g. to prefill "Suggest it"). */
   onQueryChange?: (q: string) => void;
   placeholder?: string;
+  /** i18n key (with `{{name}}`) announced for results that are already picked. */
+  pickedLabelKey?: "ingredients.inList" | "ingredients.alreadyAdded";
   maxResults?: number;
   testID?: string;
 }) {
@@ -140,7 +142,7 @@ export function IngredientTypeahead({
                 accessibilityRole="button"
                 accessibilityState={{ disabled: picked }}
                 accessibilityLabel={
-                  picked ? t("ingredients.inList", { name: item.name }) : t("ingredients.add", { name: item.name })
+                  picked ? t(pickedLabelKey, { name: item.name }) : t("ingredients.add", { name: item.name })
                 }
                 disabled={picked}
                 onPress={() => pick(item)}

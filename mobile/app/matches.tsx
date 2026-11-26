@@ -5,6 +5,7 @@ import { colors, serif } from "@/components/theme";
 import { EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { kindLabel } from "@/lib/format";
+import { ideaHref } from "@/lib/idea-route";
 import { useIngredientList } from "@/lib/ingredient-list";
 import { submitRoute } from "@/lib/submit-route";
 import type { Match, MatchTier } from "@/lib/types";
@@ -140,7 +141,7 @@ function MatchCard({ match }: { match: Match }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t(match.missing.length ? "matches.cardMissingA11y" : "matches.cardA11y", a11y)}
-      onPress={() => router.push(`/idea/${match.id}` as Href)}
+      onPress={() => router.push(ideaHref(match.id))}
       style={({ pressed }) => [styles.card, pressed && styles.pressed, pointer]}
       testID={`match-${match.id}`}
     >

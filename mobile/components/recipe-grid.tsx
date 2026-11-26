@@ -2,8 +2,9 @@ import { IdeaImage } from "@/components/idea-image";
 import { IdeaKindLabel } from "@/components/idea-kind-label";
 import { colors, serif } from "@/components/theme";
 import { kindLabel } from "@/lib/format";
+import { ideaHref } from "@/lib/idea-route";
 import type { IdeaSummary } from "@/lib/types";
-import { router, type Href } from "expo-router";
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -19,7 +20,7 @@ export function RecipeTile({ recipe }: { recipe: IdeaSummary }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("home.ideaA11y", { title: recipe.title, kind: kindLabel(recipe.kind), item: recipe.itemName })}
-      onPress={() => router.push(`/idea/${recipe.id}` as Href)}
+      onPress={() => router.push(ideaHref(recipe.id))}
       style={({ pressed }) => [styles.tile, pressed && styles.pressed, pointer]}
       testID={`recipe-${recipe.id}`}
     >

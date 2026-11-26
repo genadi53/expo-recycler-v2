@@ -166,8 +166,8 @@ export type Match = IdeaSummary & {
   tier: MatchTier;
 };
 
-/** One Key Ingredient of an Idea: a linked Item. */
-export type IdeaIngredient = { id: string; name: string };
+/** An Ingredient: an Item, by id, with its display name. Used both for the Ingredient list and for an Idea's Key Ingredients (see GLOSSARY.md). */
+export type Ingredient = { id: string; name: string };
 
 /** An Idea from `GET /ideas/:id`, with its Item and its Key Ingredients (its own Item first). */
 export type IdeaDetail = Idea & {
@@ -175,5 +175,5 @@ export type IdeaDetail = Idea & {
   itemName: string;
   categoryName: string;
   createdAt: string;
-  ingredients: IdeaIngredient[];
+  ingredients: Ingredient[];
 };
