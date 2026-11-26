@@ -157,14 +157,29 @@ const sharedIdeas = {
 
 // --- Key Ingredients on shared Ideas ---------------------------------------------------------
 
-const linkedItemIds = (ideaId: string) =>
-  (db.prepare("SELECT item_id FROM idea_ingredients WHERE idea_id = ? ORDER BY item_id").all(ideaId) as {
-    item_id: string;
-  }[]).map((row) => row.item_id);
+type IdeaDetail = {
+  idea: {
+    id: string;
+    kind: string;
+    title: string;
+    materials: string;
+    steps: string[];
+    imageUrl: string | null;
+    itemId: string;
+    itemName: string;
+    categoryName: string;
+    authorName: string | null;
+    createdAt: string;
+    ingredients: { id: string; name: string }[];
+  };
+};
+const ideaDetail = async (ideaId: string) => (await json<IdeaDetail>(await app.request(`/ideas/${ideaId}`))).idea;
+const linkedItemIds = async (ideaId: string) =>
+  (await ideaDetail(ideaId)).ingredients.map((ingredient) => ingredient.id).sort();
 
 assert(
-  sameList(linkedItemIds(sharedIdeas.banana.id), ["banana-peels"]),
-  `an idea without ingredientIds should link only its own item, got ${linkedItemIds(sharedIdeas.banana.id)}`,
+  sameList(await linkedItemIds(sharedIdeas.banana.id), ["banana-peels"]),
+  `an idea without ingredientIds should link only its own item, got ${await linkedItemIds(sharedIdeas.banana.id)}`,
 );
 
 const smoothie = await shareIdea({
@@ -175,8 +190,8 @@ const smoothie = await shareIdea({
   ingredientIds: ["citrus-peels", "banana-peels", "eggshells", "citrus-peels"],
 });
 assert(
-  sameList(linkedItemIds(smoothie.id), ["banana-peels", "citrus-peels", "eggshells"]),
-  `ingredientIds should be linked once each with the own item, got ${linkedItemIds(smoothie.id)}`,
+  sameList(await linkedItemIds(smoothie.id), ["banana-peels", "citrus-peels", "eggshells"]),
+  `ingredientIds should be linked once each with the own item, got ${await linkedItemIds(smoothie.id)}`,
 );
 
 const newItemIdea = await shareIdea({
@@ -187,8 +202,8 @@ const newItemIdea = await shareIdea({
   ingredientIds: ["glass-jars"],
 });
 assert(
-  sameList(linkedItemIds(newItemIdea.id), [newItemIdea.itemId, "glass-jars"].sort()),
-  `a new item's idea should link the new item and its ingredients, got ${linkedItemIds(newItemIdea.id)}`,
+  sameList(await linkedItemIds(newItemIdea.id), [newItemIdea.itemId, "glass-jars"].sort()),
+  `a new item's idea should link the new item and its ingredients, got ${await linkedItemIds(newItemIdea.id)}`,
 );
 
 const ideaCountBeforeRejects = Number((db.prepare("SELECT COUNT(*) AS n FROM ideas").get() as { n: number }).n);
@@ -219,6 +234,140 @@ assert(
   Number((db.prepare("SELECT COUNT(*) AS n FROM ideas").get() as { n: number }).n) === ideaCountBeforeRejects,
   "rejected ingredientIds should not create an idea",
 );
+
+// --- Idea detail -----------------------------------------------------------------------------
+
+{
+  const detail = await ideaDetail(smoothie.id);
+  assert(detail.id === smoothie.id, "idea detail should carry its id");
+  assert(detail.title === "Peel smoothie" && detail.kind === "kitchen", "idea detail should carry title and kind");
+  assert(detail.itemId === "banana-peels" && detail.itemName === "Banana peels", "idea detail should carry its item");
+  assert(detail.categoryName === "Food", `idea detail should carry the category name, got ${detail.categoryName}`);
+  assert(detail.materials === "Stuff", "idea detail should carry the materials text");
+  assert(sameList(detail.steps, ["Do it."]), "idea detail should carry the steps as a list");
+  assert(detail.authorName === "Sharer", "idea detail should carry the author name");
+  assert(detail.imageUrl === null && Boolean(detail.createdAt), "idea detail should carry imageUrl and createdAt");
+  assert(
+    sameList(
+      detail.ingredients.map((ingredient) => ingredient.name),
+      ["Banana peels", "Citrus peels", "Eggshells"],
+    ),
+    `idea detail should list the own item first, then ingredients by name, got ${JSON.stringify(detail.ingredients)}`,
+  );
+  const missingIdea = await app.request("/ideas/not-an-idea");
+  assert(missingIdea.status === 404, `unknown idea should 404, got ${missingIdea.status}`);
+  const hiddenId = crypto.randomUUID();
+  db.prepare(
+    `INSERT INTO ideas (id, item_id, kind, title, materials, steps, status, created_at)
+     VALUES (?, 'banana-peels', 'kitchen', 'Hidden', 'Stuff', '["Do it."]', 'pending', ?)`,
+  ).run(hiddenId, new Date().toISOString());
+  db.prepare("INSERT INTO idea_ingredients (idea_id, item_id) VALUES (?, 'banana-peels')").run(hiddenId);
+  const hiddenIdea = await app.request(`/ideas/${hiddenId}`);
+  assert(hiddenIdea.status === 404, `unpublished idea should 404, got ${hiddenIdea.status}`);
+}
+
+// --- Matches ---------------------------------------------------------------------------------
+
+type MatchListing = {
+  matches: {
+    id: string;
+    kind: string;
+    title: string;
+    itemId: string;
+    itemName: string;
+    categoryName: string;
+    imageUrl: string | null;
+    have: number;
+    need: number;
+    missing: string[];
+    tier: string;
+  }[];
+};
+// A second sharer, so sharer-1's points stay below person-1's on the leaderboard.
+await json(
+  await app.request("/profiles/sharer-2", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ displayName: "Second sharer" }),
+  }),
+);
+const peelCompost = await shareIdea({
+  profileId: "sharer-2",
+  itemName: "Cardboard",
+  category: "paper",
+  ideaKind: "garden",
+  title: "Peel compost",
+  ingredientIds: ["banana-peels", "eggshells", "coffee-grounds"],
+});
+{
+  const matches = await json<MatchListing>(await app.request("/matches?items=banana-peels,citrus-peels,not-an-item"));
+  const summary = matches.matches.map((match) => `${match.title}:${match.tier}:${match.have}/${match.need}`);
+  assert(
+    sameList(summary, [
+      "Candied peel:now:1/1",
+      "Banana peel chutney:now:1/1",
+      "Peel smoothie:almost:2/3",
+      "Peel compost:later:1/4",
+    ]),
+    `matches should be tiered (0, 1, 2+ missing), newest first in a tier, got ${JSON.stringify(summary)}`,
+  );
+  const smoothieMatch = matches.matches.find((match) => match.id === smoothie.id)!;
+  assert(sameList(smoothieMatch.missing, ["Eggshells"]), `smoothie should miss eggshells, got ${smoothieMatch.missing}`);
+  assert(
+    smoothieMatch.kind === "kitchen" && smoothieMatch.itemId === "banana-peels" && smoothieMatch.categoryName === "Food",
+    "a match should carry the idea summary",
+  );
+  const compostMatch = matches.matches.find((match) => match.id === peelCompost.id)!;
+  assert(
+    sameList(compostMatch.missing, ["Cardboard", "Coffee grounds", "Eggshells"]),
+    `missing names should be sorted by name, got ${compostMatch.missing}`,
+  );
+  assert(matches.matches[0]!.missing.length === 0, "a make-it-now match should miss nothing");
+
+  const byHave = await json<MatchListing>(await app.request("/matches?items=banana-peels,eggshells,cardboard"));
+  const byHaveSummary = byHave.matches.map((match) => `${match.title}:${match.tier}:${match.have}`);
+  assert(
+    sameList(byHaveSummary, [
+      "Sheet mulch:now:1",
+      "Eggshell calcium:now:1",
+      "Banana peel chutney:now:1",
+      "Peel compost:almost:3",
+      "Peel smoothie:almost:2",
+    ]),
+    `within a tier, more have comes first, got ${JSON.stringify(byHaveSummary)}`,
+  );
+
+  const onlyUnknown = await json<MatchListing>(await app.request("/matches?items=not-an-item"));
+  assert(onlyUnknown.matches.length === 0, "unknown ids alone should match nothing");
+  for (const query of ["", "?items=", "?items=%20,%20"]) {
+    const empty = await app.request(`/matches${query}`);
+    assert(empty.status === 400, `empty matches query '${query}' should 400, got ${empty.status}`);
+  }
+}
+
+// --- Popular Items ---------------------------------------------------------------------------
+
+{
+  type PopularListing = { items: { id: string; name: string; categoryName: string; ideaCount: number }[] };
+  const popular = await json<PopularListing>(await app.request("/items?popular=1&limit=4"));
+  const ranked = popular.items.map((item) => `${item.id}:${item.ideaCount}`);
+  // Published Ideas linking each Item (the pending "Hidden" one is not counted):
+  // banana-peels 3 (chutney, smoothie, compost), eggshells 3 (calcium, smoothie, compost),
+  // cardboard 2, citrus-peels 2, coffee-grounds 2. Ties go by name.
+  assert(
+    sameList(ranked, ["banana-peels:3", "eggshells:3", "cardboard:2", "citrus-peels:2"]),
+    `popular items should order by link count, then name, got ${JSON.stringify(ranked)}`,
+  );
+  assert(popular.items.every((item) => item.name && item.categoryName), "popular items should carry item fields");
+  const byDefault = await json<PopularListing>(await app.request("/items?popular=1"));
+  assert(
+    byDefault.items.length > 4 && byDefault.items.length <= 20,
+    `popular should default to at most 20 items, got ${byDefault.items.length}`,
+  );
+  const plain = await json<{ items: { name: string }[] }>(await app.request("/items"));
+  const names = plain.items.map((item) => item.name);
+  assert(sameList(names, [...names].sort((a, b) => a.localeCompare(b))), "plain /items should stay sorted by name");
+}
 
 const reuse = await json<{ pointsAwarded: number; badgesUnlocked: { slug: string }[] }>(
   await app.request("/logs", {
@@ -777,8 +926,12 @@ const ideaCount = (target: DatabaseSync) =>
 
   const reopened = openDatabase(file, images);
   assert(ideaCount(reopened) === 1, "the fresh start should run only once");
-  const keptLinks = reopened.prepare("SELECT item_id FROM idea_ingredients WHERE idea_id = ?").all(shared.idea.id);
-  assert(keptLinks.length === 2, "links made after the fresh start should survive a reopen");
+  const reopenedApp = createApp(reopened, images, ensureImagesDir(path.join(dir, "item-images")));
+  const kept = await json<IdeaDetail>(await reopenedApp.request(`/ideas/${shared.idea.id}`));
+  assert(
+    sameList(kept.idea.ingredients.map((ingredient) => ingredient.id), ["tin-cans", "glass-jars"]),
+    `links made after the fresh start should survive a reopen, got ${JSON.stringify(kept.idea.ingredients)}`,
+  );
   assert(fs.readdirSync(images).length === 1, "images made after the fresh start should survive a reopen");
   reopened.close();
 }
